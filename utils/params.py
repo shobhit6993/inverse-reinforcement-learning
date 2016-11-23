@@ -3,15 +3,29 @@ from enum import Enum
 # Number of slots to be filled.
 NUM_SLOTS = 3
 
-# Controls the fraction of total confirmations that are explicit.
-AGENT_CONFIRM_PROBABILITY = 0.8
+# Following a request for a slot from the system, this is the probability with
+# which the user provides the requested slot. Alternatively, the user provides
+# information for all slots.
+USER_ONE_SLOT_VS_ALL_SLOTS_PROBABILITY = 0.95
 
+# If the system greets, this is the probability with which the user stays
+# silent. Alternatively, the user provides information for all slots.
+USER_SILENT_VS_ALL_SLOTS_PROBABILITY = 0.7
+
+# Following an implicit confirmation from the system, this is the probability
+# with which the user provides the requested slot, implicitly confirming the
+# slot being confirmed. Alternatively, the user negates the confirmation
+# without providing any new information.
+USER_ONE_SLOT_VS_NEGATE_PROBABILITY = 0.9
+
+# Controls the fraction of total confirmations that are explicit.
+AGENT_EXPLICIT_VS_IMPLICIT_CONFIRMATION_PROBABILITY = 0.8
 
 
 class UserStateStatus(Enum):
     EMPTY = "empty"
-    CONFIRMED = "confirmed"
     PROVIDED = "provided"
+    CONFIRMED = "confirmed"
 
 
 class AgentStateStatus(Enum):
