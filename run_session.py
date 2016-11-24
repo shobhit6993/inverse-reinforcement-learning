@@ -1,6 +1,5 @@
 from agent.dialog_manager import DialogManager
-from utils.params import AgentActionType
-from utils.params import UserActionType
+from utils.params import AgentActionType, UserActionType, NUM_SESSIONS_IN_CORPUS
 from user.real_user import RealUser
 from user.user_action import UserAction
 
@@ -25,10 +24,19 @@ class DialogSession:
             # raw_input()
 
 
+def generate_dialog_corpus(num_sessions=NUM_SESSIONS_IN_CORPUS):
+    for _ in xrange(num_sessions):
+        session = DialogSession()
+        session.start()
+        print("----")
+
+
+
 def main():
     session = DialogSession()
     session.start()
 
 
 if __name__ == '__main__':
+    # generate_dialog_corpus()
     main()

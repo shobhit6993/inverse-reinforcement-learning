@@ -12,9 +12,9 @@ from user_action import UserActions
 from user_state import UserState
 
 
-class RealUser:
-    def __init__(self, init_state=UserState()):
-        self.state = init_state
+class RealUser(object):
+    def __init__(self):
+        self.state = UserState()
 
     def take_turn(self, system_act):
         """Executes a user turn based on the agent's most recent action.
@@ -27,7 +27,8 @@ class RealUser:
         """
         next_action = self.update_state_and_next_action(system_act)
         # print("User -- [State] " + str(self.state))
-        print("User -- (Action) " + str(next_action))
+        # print("User -- (Action) " + str(next_action))
+        print("U:" + next_action.type.value)
         return next_action
 
     def update_state_and_next_action(self, system_act):

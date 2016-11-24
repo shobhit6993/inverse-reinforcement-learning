@@ -11,16 +11,17 @@ from utils.params import NUM_SLOTS
 from numpy.random import binomial
 
 
-class DialogManager:
-    def __init__(self, init_state=AgentState()):
-        self.state = init_state
+class DialogManager(object):
+    def __init__(self):
+        self.state = AgentState()
         self.prev_agent_act = None
 
     def start_dialog(self):
         # print("Agent-- [State] " + str(self.state))
         # Agent starts with a GREETING
         self.prev_agent_act = AgentActions.greet.value
-        print("Agent-- (Action) " + str(self.prev_agent_act))
+        # print("Agent-- (Action) " + str(self.prev_agent_act))
+        print("A:" + self.prev_agent_act.type.value)
         return self.prev_agent_act
 
     def take_turn(self, user_act):
@@ -35,7 +36,8 @@ class DialogManager:
         next_action = self.update_state_and_next_action(user_act)
         self.prev_agent_act = next_action
         # print("Agent-- [State] " + str(self.state))
-        print("Agent-- (Action) " + str(next_action))
+        # print("Agent-- (Action) " + str(next_action))
+        print("A:" + next_action.type.value)
         return next_action
 
     def update_state_and_next_action(self, user_act):

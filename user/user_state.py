@@ -2,7 +2,7 @@ from utils.params import NUM_SLOTS
 from utils.params import UserStateStatus
 
 
-class UserState:
+class UserState(object):
     def __init__(self):
         self.slots = {}
         self.system_act = None

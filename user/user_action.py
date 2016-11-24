@@ -4,7 +4,7 @@ from utils.params import NUM_SLOTS
 from utils.params import UserActionType
 
 
-class UserAction:
+class UserAction(object):
     def __init__(self, type_, slot_id):
         self.type = type_
         self.slot_id = slot_id

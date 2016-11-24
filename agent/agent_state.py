@@ -2,7 +2,7 @@ from utils.params import AgentStateStatus
 from utils.params import NUM_SLOTS
 
 
-class AgentState:
+class AgentState(object):
     def __init__(self):
         self.slots = {}
 

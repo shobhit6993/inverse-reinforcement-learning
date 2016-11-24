@@ -4,7 +4,7 @@ from utils.params import AgentActionType
 from utils.params import NUM_SLOTS
 
 
-class AgentAction:
+class AgentAction(object):
     def __init__(self, type_, ask_id, confirm_id):
         self.type = type_
         self.ask_id = ask_id
