@@ -31,7 +31,6 @@ def generate_dialog_corpus(num_sessions=NUM_SESSIONS_IN_CORPUS):
         print("----")
 
 
-
 def main():
     session = DialogSession()
     session.start()

@@ -1,7 +1,7 @@
 from enum import Enum
 
 # Number of dialog sessions to be simulated for building the corpus
-NUM_SESSIONS_IN_CORPUS = 10
+NUM_SESSIONS_IN_CORPUS = 100000
 
 # Number of slots to be filled.
 NUM_SLOTS = 3
