@@ -1,25 +1,38 @@
 """Handcrafted dialog policy for the dialog manager."""
 
+from numpy.random import binomial
+
 from agent_action import AgentActions
 from agent_state import AgentState
 from utils.params import AGENT_EXPLICIT_VS_IMPLICIT_CONFIRMATION_PROBABILITY
-from utils.params import AgentActionType
-from utils.params import AgentStateStatus
-from utils.params import UserActionType
+from utils.params import AgentActionType, AgentStateStatus, UserActionType
 from utils.params import NUM_SLOTS
-
-from numpy.random import binomial
 
 
 class DialogManager(object):
+    """Class for the agent in a dialog system. The agent is also called the
+    "Dilog Manager". It keeps track of the agent's state, and picks actions in
+    response to user's actions based on a handcoded policy.
+
+    Attributes:
+        prev_agent_act (AgentAction): Agent's action at the last timestep.
+        state (AgentState): Agent's current state.
+    """
+
     def __init__(self):
         self.state = AgentState()
         self.prev_agent_act = None
 
     def start_dialog(self):
-        # print("Agent-- [State] " + str(self.state))
+        """Kicks off the dialog session by having the agent take the first
+        action.
+
+        Returns:
+            AgentAction: The first action taken by the agent.
+        """
         # Agent starts with a GREETING
         self.prev_agent_act = AgentActions.greet.value
+        # print("Agent-- [State] " + str(self.state))
         print("Agent-- (Action) " + str(self.prev_agent_act))
         # print("A:" + self.prev_agent_act.type.value)
         return self.prev_agent_act
@@ -126,11 +139,20 @@ class DialogManager(object):
             return AgentActions.close.value
 
     def _mark_all_slots_as_obtained(self):
+        """Marks all slots "OBTAINED"
+        """
         for id_ in xrange(NUM_SLOTS):
             if self.state.slots[id_] is AgentStateStatus.EMPTY:
                 self.state.mark_slot_as_obtained(id_)
 
     def _ask_or_close(self):
+        """If there is an EMPTY slot, retuns an action to request that slot.
+        Otherwise, returns an action for terminating the dialog session.
+
+        Returns:
+            AgentAction: A request-slot action, or one to terminate the dialog
+                session, whichever is appropriate.
+        """
         slot_id = self.state.get_empty_slot()
         if slot_id is None:
             return AgentActions.close.value
@@ -138,6 +160,17 @@ class DialogManager(object):
             return AgentActions.ask_slot.value[slot_id]
 
     def _ask_confirm_or_close(self):
+        """If there is an unconfirmed slot, returns an action to confirm it.
+        Otherwise, returns an action to request an EMPTY slot. If none of the
+        above are possible, returns an action to terminate the dialog session.
+
+        An "unconfirmed" slot is one which is marked "OBTAINED", but not yet
+        "CONFIRMED".
+
+        Returns:
+            AgentAction: A request-slot action, or a confirm-slot action, or
+            one to terminate the dialog session, whichever is appropriate.
+        """
         empty_slot_id = self.state.get_empty_slot()
         if empty_slot_id is None:
             unconfirmed_slot_id = self.state.get_unconfirmed_slot()
@@ -149,6 +182,17 @@ class DialogManager(object):
             return AgentActions.ask_slot.value[empty_slot_id]
 
     def _confirm(self):
+        """Returns an action to confirm an unconfirmed slot. The confirmation
+        could either be explicit or implicit. In the latter case, the action
+        requests an EMPTY slot in addition to implicitly confirming an
+        unconfirmed one.
+
+        An "unconfirmed" slot is one which is marked "OBTAINED", but not yet
+        "CONFIRMED".
+
+        Returns:
+            AgentAction: An action to confirm a slot.
+        """
         # Controls the fraction of total confirmations that are explicit.
         b = binomial(1, AGENT_EXPLICIT_VS_IMPLICIT_CONFIRMATION_PROBABILITY)
         if b == 1:
@@ -157,11 +201,32 @@ class DialogManager(object):
             return self._implicit_confirm()
 
     def _explicit_confirm(self):
+        """Returns an action to explicitly confirm an unconfirmed slot.
+
+        An "unconfirmed" slot is one which is marked "OBTAINED", but not yet
+        "CONFIRMED".
+
+        Returns:
+            AgentAction: An action to explicitly confirm a slot.
+        """
         return AgentActions.explicit_confirm.value[self.prev_agent_act.ask_id]
 
     def _implicit_confirm(self):
+        """Returns an action to implicitly confirm an unconfirmed slot. An
+        explicit confirmation is returned if there is not EMPTY slot.
+
+        An "unconfirmed" slot is one which is marked "OBTAINED", but not yet
+        "CONFIRMED".
+
+        Returns:
+            AgentAction: An action to implicitly confirm a slot, if possible.
+        """
         empty_slot_id = self.state.get_empty_slot()
         confirm_slot_id = self.prev_agent_act.ask_id
+
+        # If there is no EMPTY slot, implicit confirmation isn't possible
+        # because there isn't a slot left to request alongside the
+        # implicit confirmation.
         if empty_slot_id is None:
             return AgentActions.explicit_confirm.value[confirm_slot_id]
         else:

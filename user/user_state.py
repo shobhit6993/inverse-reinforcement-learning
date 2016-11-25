@@ -1,11 +1,22 @@
-from utils.params import NUM_SLOTS
-from utils.params import UserStateStatus
+"""User's state."""
+
+from utils.params import NUM_SLOTS, UserStateStatus
 
 
 class UserState(object):
+    """State class for user. The user's state consists of status
+        of all the slots and the most recent action of the agent.
+
+    Attributes:
+        slots (dict): Dictionary of slot-status pairs. The dictionary is keyed
+            by slot identifiers, and the values correspond to the
+            status (`UserStateStatus`) of each slot.
+        system_act (AgentAction): Most recent action taken by the agent.
+    """
+
     def __init__(self):
         self.slots = {}
-        self.system_act = None  # AgentAction
+        self.system_act = None
 
         self._init_slots()
 
@@ -14,40 +25,20 @@ class UserState(object):
                                                   self.system_act.type.value)
 
     def __hash__(self):
-        """Returns a hash value for the `UserState` object.
-        Only `system_act` attribute is used for hashing since it's the only
-        consequential part of the `UserState`.
+        # Only `system_act` attribute is used for hashing since it's the only
+        # consequential part of the `UserState`.
 
-        Returns:
-            int: Hash value of this class object.
-        """
         return hash(self.system_act)
 
     def __eq__(self, other):
-        """Tests if the other `UserState` object's value is same as this one's.
-        Only the `system_act` attribute is used to test equality.
-
-        Args:
-            other: The object to be compared with.
-
-        Returns:
-            Boolean: True if the values of the two objects are the same.
-        """
+        # Only the `system_act` attribute is used to test equality.
         if type(other) is UserState:
             return self.system_act is other.system_act
         else:
             return False
 
     def __ne__(self, other):
-        """Tests if the other `UserState` object's value is different from
-        this one. Only the `system_act` attribute is used to test inequality.
-
-        Args:
-            other: The object to be compared with.
-
-        Returns:
-            Boolean: True if the values of the two objects are different.
-        """
+        # Only the `system_act` attribute is used to test inequality.
         return not (self == other)
 
     def mark_slot_as_empty(self, slot_id):

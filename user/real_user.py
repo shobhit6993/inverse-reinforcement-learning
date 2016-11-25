@@ -1,15 +1,23 @@
-"""Handcrafted real users."""
+"""Handcrafted real user."""
 
 from numpy.random import randint
 
-from utils.params import AgentActionType, UserActionType, NUM_SLOTS
-from utils.params import UserStateStatus
 from user_action import UserActions
-from user_state import UserState
 from user_policy import UserPolicy
+from user_state import UserState
+from utils.params import AgentActionType, NUM_SLOTS, UserActionType
+from utils.params import UserStateStatus
 
 
 class RealUser(object):
+    """Class for the real user in a dialog system. It keeps track of the user's
+    state and picks actions in response to agent's actions using some policy.
+
+    Attributes:
+        policy (UserPolicy): Policy to be followed by the user.
+        state (UserState): Real user's current state.
+    """
+
     def __init__(self):
         self.state = UserState()
         self.policy = UserPolicy()

@@ -1,8 +1,18 @@
-from utils.params import AgentStateStatus
-from utils.params import NUM_SLOTS
+""" Dialog agent's state."""
+
+from utils.params import AgentStateStatus, NUM_SLOTS
 
 
 class AgentState(object):
+    """State class for dialog agent. The agent's state consists of status
+        of all the slots.
+
+    Attributes:
+        slots (dict): Dictionary of slot-status pairs. The dictionary is keyed
+            by slot identifiers, and the values correspond to the
+            status (`AgentStateStatus`) of each slot.
+    """
+
     def __init__(self):
         self.slots = {}
 
@@ -25,7 +35,7 @@ class AgentState(object):
         None is returned.
 
         Returns:
-            Slot identifier or None
+            int or None: Slot identifier or None
         """
         for slot_id, val in self.slots.iteritems():
             if val is AgentStateStatus.EMPTY:
@@ -40,7 +50,7 @@ class AgentState(object):
         not yet "CONFIRMED".
 
         Returns:
-            Slot identifier or None
+            int or None: Slot identifier or None
         """
         for slot_id, val in self.slots.iteritems():
             if val is AgentStateStatus.OBTAINED:
@@ -48,5 +58,7 @@ class AgentState(object):
         return None
 
     def _init_slots(self):
+        """Initializes the `slots` dictionary with all slots marked "EMPTY".
+        """
         for id_ in xrange(NUM_SLOTS):
             self.mark_slot_as_empty(id_)
