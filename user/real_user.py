@@ -1,20 +1,18 @@
-"""Handcrafted dialog policy for the real users."""
+"""Handcrafted real users."""
 
-from numpy.random import binomial
+from numpy.random import randint
 
-from utils.params import AgentActionType
-from utils.params import NUM_SLOTS
-from utils.params import USER_ONE_SLOT_VS_ALL_SLOTS_PROBABILITY
-from utils.params import USER_ONE_SLOT_VS_NEGATE_PROBABILITY
-from utils.params import USER_SILENT_VS_ALL_SLOTS_PROBABILITY
+from utils.params import AgentActionType, UserActionType, NUM_SLOTS
 from utils.params import UserStateStatus
 from user_action import UserActions
 from user_state import UserState
+from user_policy import UserPolicy
 
 
 class RealUser(object):
     def __init__(self):
         self.state = UserState()
+        self.policy = UserPolicy()
 
     def take_turn(self, system_act):
         """Executes a user turn based on the agent's most recent action.
@@ -25,108 +23,114 @@ class RealUser(object):
         Returns:
             UserAction: User's next action.
         """
-        next_action = self.update_state_and_next_action(system_act)
-        # print("User -- [State] " + str(self.state))
-        # print("User -- (Action) " + str(next_action))
-        print("U:" + next_action.type.value)
+        next_action = self.update_state_and_get_next_action(system_act)
+        print("User -- [State] " + str(self.state))
+        print("User -- (Action) " + str(next_action))
+        # print("U:" + next_action.type.value)
         return next_action
 
-    def update_state_and_next_action(self, system_act):
-        """Updates the user's state and returns the next action for the user,
-        given the dialog history and the current system-action.
+    def update_state_and_get_next_action(self, system_act):
+        """Updates the user-state and returns the next action to be taken.
+        The state-update and next action are based on the user-`policy` and
+        the agent's most recent action
 
         Args:
-            system_act (AgentAction): Current agent-action.
+            system_act (AgentAction): Dialog agent's most recent action.
 
         Returns:
-            UserAction: Next action to be taken by the user.
-
-        Raises:
-            ValueError: Un-supported system-action.
+            UserAction: User's next action.
         """
+        # Partially update state by updating the `system_act`.
+        self.state.system_act = system_act
 
-        if system_act.type is AgentActionType.GREET:
-            return self._handle_greeting()
-        elif system_act.type is AgentActionType.ASK_SLOT:
-            return self._handle_slot_request(system_act)
-        elif system_act.type is AgentActionType.EXPLICIT_CONFIRM:
-            return self._handle_explicit_confirmation(system_act)
-        elif system_act.type is AgentActionType.CONFIRM_ASK:
-            return self._handle_implicit_confirmation(system_act)
-        elif system_act.type is AgentActionType.CLOSE:
+        # From the policy, sample the type of action, a UserActionType, to be
+        # taken.
+        action_type = self.policy.get_action(self.state)
+
+        # Build the full UserAction based on the sampled action type.
+        action = self._build_action(action_type)
+
+        # Update state to reflect the action that is about to be taken.
+        self._update_state(action)
+        return action
+
+    def _build_action(self, action_type):
+        """Builds a full action based on the sampled action type.
+        The action object -- UserAction -- is based on the UserActionType
+        returned by the policy, and contains other details such as slot ids.
+
+        Args:
+            action_type (UserActionType): The type of user-action to be taken.
+
+        Returns:
+            UserAction: The action to be taken.
+        """
+        requested_slot_id = self.state.system_act.ask_id
+        confirm_slot_id = self.state.system_act.confirm_id
+        random_slot_id = randint(NUM_SLOTS)
+
+        if action_type is UserActionType.SILENT:
+            return UserActions.silent.value
+
+        elif action_type is UserActionType.ALL_SLOTS:
+            return UserActions.all_slots.value
+
+        elif action_type is UserActionType.ONE_SLOT:
+            # If agent asked for a slot, return UserAction corresponding to
+            # that slot. Otherwise, return UserAction corresponding to a
+            # a random slot.
+            if requested_slot_id is not None:
+                return UserActions.one_slot.value[requested_slot_id]
+            else:
+                return UserActions.one_slot.value[random_slot_id]
+
+        elif action_type is UserActionType.CONFIRM:
+            return UserActions.confirm.value[confirm_slot_id]
+        elif action_type is UserActionType.NEGATE:
+            return UserActions.negate.value[confirm_slot_id]
+        elif action_type is UserActionType.CLOSE:
             return UserActions.close.value
-        else:
-            raise ValueError("System-act of type {} is not supported"
-                             .format(system_act.type.value))
+
+    def _update_state(self, action):
+        """Updates the user-state based on the action about to be taken.
+
+        Args:
+            action (UserAction): Action the user is about to take.
+        """
+        slot_id = action.slot_id
+
+        if action.type is UserActionType.SILENT:
+            pass
+
+        elif action.type is UserActionType.ALL_SLOTS:
+            # Mark all slots as PROVIDED
+            self._mark_all_slots_as_provided()
+
+        elif action.type is UserActionType.ONE_SLOT:
+            # Mark the requested slot as "PROVIDED"
+            self.state.slots[slot_id] = UserStateStatus.PROVIDED
+
+            # If the agent asked for an implicit confirmation, and the user
+            # responds with information for the requested slot, then in
+            # addition to marking the requested slot as provided, mark the slot
+            # being implicitly confirmed as "CONFIRMED".
+            if self.state.system_act.type is AgentActionType.CONFIRM_ASK:
+                confirm_slot_id = self.state.system_act.confirm_id
+                self.state.slots[confirm_slot_id] = UserStateStatus.CONFIRMED
+
+        elif action.type is UserActionType.CONFIRM:
+            # Mark the slot being confirmed as "CONFIRMED"
+            self.state.slots[slot_id] = UserStateStatus.CONFIRMED
+
+        elif action.type is UserActionType.NEGATE:
+            # Mark the slot being negated as "EMPTY"
+            self.state.slots[slot_id] = UserStateStatus.EMPTY
+
+        elif action.type is UserActionType.CLOSE:
+            pass
 
     def _mark_all_slots_as_provided(self):
         """Sets the status of all slots as "PROVIDED".
-
-        Returns:
-            None
         """
         for id_ in xrange(NUM_SLOTS):
             self.state.slots[id_] = UserStateStatus.PROVIDED
-
-    def _handle_greeting(self):
-        # Update system_act in the user-state.
-        self.state.system_act = AgentActionType.GREET
-
-        # If the system greets, the user stays silent with probability p,
-        # and provides all slots with probability (1-p).
-        b = binomial(1, USER_SILENT_VS_ALL_SLOTS_PROBABILITY)
-        if b == 1:
-            action = UserActions.silent.value
-        else:
-            action = UserActions.all_slots.value
-            self._mark_all_slots_as_provided()  # Mark all slots as PROVIDED
-        return action
-
-    def _handle_slot_request(self, system_act):
-        # Update system_act in the user-state.
-        self.state.system_act = AgentActionType.ASK_SLOT
-
-        # Following a request for a slot from the system, the user either
-        # provides the requested slot with probability p or provides info.
-        # for all slots with probability (1-p).
-        requested_slot_id = system_act.ask_id
-        b = binomial(1, USER_ONE_SLOT_VS_ALL_SLOTS_PROBABILITY)
-        if b == 1:
-            action = UserActions.one_slot.value[requested_slot_id]
-            # Mark the requested slot as "PROVIDED"
-            self.state.slots[requested_slot_id] = UserStateStatus.PROVIDED
-        else:
-            action = UserActions.all_slots.value
-            self._mark_all_slots_as_provided()  # Mark all slots as PROVIDED
-        return action
-
-    def _handle_explicit_confirmation(self, system_act):
-        # Update system_act in the user-state.
-        action = UserActions.confirm.value[system_act.confirm_id]
-
-        # An explicit confirmation request from the system is always responded
-        # to by the user with affirmative.
-        self.state.system_act = AgentActionType.EXPLICIT_CONFIRM
-        return action
-
-    def _handle_implicit_confirmation(self, system_act):
-        # Update system_act in the user-state.
-        self.state.system_act = AgentActionType.CONFIRM_ASK
-
-        # Following an implicit confirmation from the system, the user provides
-        # the requested slot with probability p -- implicitly confirming the
-        # slot being confirmed -- and negates the confirmation with probability
-        # (1-p) without providing any new information.
-        requested_slot_id = system_act.ask_id
-        confirmation_slot_id = system_act.confirm_id
-        b = binomial(1, USER_ONE_SLOT_VS_NEGATE_PROBABILITY)
-        if b == 1:
-            action = UserActions.one_slot.value[requested_slot_id]
-            # Mark the requested slot as "PROVIDED"
-            self.state.slots[requested_slot_id] = UserStateStatus.PROVIDED
-            # Mark the slot whose confirmation is sought implicitly
-            # as "CONFIRMED"
-            self.state.slots[confirmation_slot_id] = UserStateStatus.CONFIRMED
-        else:
-            action = UserActions.negate.value[requested_slot_id]
-        return action

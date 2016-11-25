@@ -38,6 +38,7 @@ class AgentStateStatus(Enum):
 
 
 class UserActionType(Enum):
+    # __order__ = ("SILENT ALL_SLOTS ONE_SLOT CONFIRM NEGATE CLOSE")
     SILENT = "silent"
     ALL_SLOTS = "provide-all-slots"
     ONE_SLOT = "provide-one-slot"
@@ -47,6 +48,7 @@ class UserActionType(Enum):
 
 
 class AgentActionType(Enum):
+    # __order__ = "GREET ASK_SLOT EXPLICIT_CONFIRM CONFIRM_ASK CLOSE"
     GREET = "greet"
     ASK_SLOT = "ask_slot"
     EXPLICIT_CONFIRM = "explicit_confirm"
