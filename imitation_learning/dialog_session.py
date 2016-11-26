@@ -1,4 +1,4 @@
-"""Run dialog session."""
+"""Dialog session."""
 
 from agent.dialog_manager import DialogManager
 from user.user import User
@@ -41,6 +41,10 @@ class DialogSession:
             system_act = self.agent.take_turn(user_act)
 
 
+###################################################################
+# Sample usage to run a dialog session, or generate a dialog corpus
+###################################################################
+
 def generate_dialog_corpus(num_sessions=NUM_SESSIONS_IN_CORPUS):
     """Generates a dialog corpus by executing multiple sessions successively.
 
@@ -53,13 +57,8 @@ def generate_dialog_corpus(num_sessions=NUM_SESSIONS_IN_CORPUS):
         print("----")
 
 
-def run_single_seesion():
+def run_single_session():
     """Executes a single dialog session.
     """
     session = DialogSession(UserPolicyType.handcrafted)
     session.start()
-
-
-if __name__ == '__main__':
-    # generate_dialog_corpus()
-    run_single_seesion()
