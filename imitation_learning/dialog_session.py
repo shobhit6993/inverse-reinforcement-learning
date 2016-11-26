@@ -18,14 +18,9 @@ class DialogSession:
             form (AgentActionType, UserActionType).
     """
 
-    def __init__(self, user_policy_type):
-        """Class constructor
-
-        Args:
-            user_policy_type (UserPolicyType): Type of user policy.
-        """
-        self.user = User(user_policy_type)
-        self.agent = DialogManager()
+    def __init__(self, user, agent):
+        self.user = user
+        self.agent = agent
         self.user_log = []
 
     def start(self):
@@ -44,6 +39,11 @@ class DialogSession:
                 break
 
             system_act = self.agent.take_turn(user_act)
+
+    def clear_user_log(self):
+        """Purges the user log.
+        """
+        self.user_log[:] = []
 
     def _save_user_state_action(self, user_action):
         """Appends the user's current state and action to the `user_log`.
@@ -70,14 +70,19 @@ def generate_dialog_corpus(num_sessions=NUM_SESSIONS_IN_CORPUS):
     Args:
         num_sessions (int, optional): Number of dialog sessions to be executed.
     """
+    user = User(UserPolicyType.handcrafted)
+    agent = DialogManager()
     for _ in xrange(num_sessions):
-        session = DialogSession(UserPolicyType.handcrafted)
+        session = DialogSession(user, agent)
         session.start()
         print("----")
+        session.clear_user_log()
 
 
 def run_single_session():
     """Executes a single dialog session.
     """
-    session = DialogSession(UserPolicyType.handcrafted)
+    user = User(UserPolicyType.handcrafted)
+    agent = DialogManager()
+    session = DialogSession(user, agent)
     session.start()
