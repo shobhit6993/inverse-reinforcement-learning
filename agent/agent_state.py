@@ -25,6 +25,15 @@ class AgentState(object):
         self.slots[slot_id] = AgentStateStatus.EMPTY
 
     def mark_slot_as_obtained(self, slot_id, check=False):
+        """Marks the given slot as "OBTAINED".
+
+        Args:
+            slot_id (int): Identifier of the slot under consideration
+            check (bool, optional): When set to True, the slot will be marked
+            "OBTAINED" only if it was not initially "CONFIRMED.". Otherwise,
+            the slot will always be marked "OBTAINED" irrespective of its
+            initial status.
+        """
         if ((not check) or
                 (self.slots[slot_id] is not AgentStateStatus.CONFIRMED)):
             self.slots[slot_id] = AgentStateStatus.OBTAINED
