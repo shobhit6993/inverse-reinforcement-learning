@@ -9,6 +9,7 @@ def run_single_session():
     """
     session = DialogSession(UserPolicyType.handcrafted)
     session.start()
+    print session.user_log
 
 
 if __name__ == '__main__':
