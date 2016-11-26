@@ -24,8 +24,10 @@ class AgentState(object):
     def mark_slot_as_empty(self, slot_id):
         self.slots[slot_id] = AgentStateStatus.EMPTY
 
-    def mark_slot_as_obtained(self, slot_id):
-        self.slots[slot_id] = AgentStateStatus.OBTAINED
+    def mark_slot_as_obtained(self, slot_id, check=False):
+        if ((not check) or
+                (self.slots[slot_id] is not AgentStateStatus.CONFIRMED)):
+            self.slots[slot_id] = AgentStateStatus.OBTAINED
 
     def mark_slot_as_confirmed(self, slot_id):
         self.slots[slot_id] = AgentStateStatus.CONFIRMED

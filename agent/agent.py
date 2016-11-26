@@ -64,79 +64,237 @@ class Agent(object):
             AgentAction: Next action to be taken by the agent.
 
         Raises:
-            ValueError: Unhandled user-action in a given scenario.
+            ValueError: Invalid user action.
         """
 
-        # If the agent greeted, and the user remains silent, then ask for a
-        # slot. However, if the user responded with information for all slots,
-        # mark all the slots as "OBTAINED", and move to confirmation.
+        if user_act.type is UserActionType.SILENT:
+            return self._handle_silence(user_act)
+        elif user_act.type is UserActionType.ONE_SLOT:
+            return self._handle_one_slot(user_act)
+        elif user_act.type is UserActionType.ALL_SLOTS:
+            return self._handle_all_slots(user_act)
+        elif user_act.type is UserActionType.CONFIRM:
+            return self._handle_confirmation(user_act)
+        elif user_act.type is UserActionType.NEGATE:
+            return self._handle_negation(user_act)
+        elif user_act.type is UserActionType.CLOSE:
+            return self._handle_close(user_act)
+        else:
+            raise ValueError("Invalid user-act {}".format(user_act))
+
+    def _handle_silence(self, user_act):
+        """Returns an appropriate agent action after user silence.
+
+        Args:
+            user_act (UserAction): User's most recent action.
+
+        Returns:
+            AgentAction: The action to be taken.
+        """
+        assert user_act.type is UserActionType.SILENT, (
+            "Invalid user action: {} in method: {}"
+            .format(user_act, self._handle_silence.__name__))
+
+        # On user silence, if the previous agent action was to greet, then ask
+        # for a slot. If the user wants to terminate the session, the agent
+        # obliges. Otherwise, just repeat the previous action.
+
         if self.prev_agent_act.type is AgentActionType.GREET:
-            if user_act.type is UserActionType.SILENT:
-                return self._ask_confirm_or_close()
-            elif user_act.type is UserActionType.ALL_SLOTS:
-                self._mark_all_slots_as_obtained()
-                return self._ask_confirm_or_close()
-
-        # If the agent requested a slot, and the user provided one or more
-        # slots, then mark those slots as PROVIDED, and move to confirmation.
-        if self.prev_agent_act.type is AgentActionType.ASK_SLOT:
-            if user_act.type is UserActionType.ONE_SLOT:
-                self.state.mark_slot_as_obtained(self.prev_agent_act.ask_id)
-                return self._confirm()
-            elif user_act.type is UserActionType.ALL_SLOTS:
-                self._mark_all_slots_as_obtained()
-                return self._ask_confirm_or_close()
-            else:
-                raise ValueError("User-act of type {} is not supported when"
-                                 "previous agent act was {}"
-                                 .format(user_act.type.value,
-                                         self.prev_agent_act.type.value))
-
-        # If the agent requested an explicit confirmation, then update the slot
-        # based on whether the user agrees or dissents. Follow this with a
-        # request for another slot, or close dialog, as appropriate.
-        if self.prev_agent_act.type is AgentActionType.EXPLICIT_CONFIRM:
-            if user_act.type is UserActionType.CONFIRM:
-                self.state.mark_slot_as_confirmed(
-                    self.prev_agent_act.confirm_id)
-                return self._ask_confirm_or_close()
-            elif user_act.type is UserActionType.NEGATE:
-                self.state.mark_slot_as_empty(self.prev_agent_act.confirm_id)
-                return self._ask_confirm_or_close()
-            else:
-                raise ValueError("User-act of type {} is not supported when"
-                                 "previous agent act was {}"
-                                 .format(user_act.type.value,
-                                         self.prev_agent_act.type.value))
-
-        # Implicit confirmation involves a confirmation for a previously
-        # requested slot along with a new request for another slot.
-        # If the agent went for an implicit confirmation at the last step, then
-        # update the slot being confirmed as per the user-response: Negation
-        # should result in the slot being marked EMPTY, while user's act of
-        # providing information for the requested slot should be treated as an
-        # affirmation for the slot being confirmed.
-        if self.prev_agent_act.type is AgentActionType.CONFIRM_ASK:
-            if user_act.type is UserActionType.ONE_SLOT:
-                # Mark the slot for which implicit confirmation was requested
-                # as "CONFIRMED".
-                self.state.mark_slot_as_confirmed(
-                    self.prev_agent_act.confirm_id)
-                # Update the slot for which the user provided information.
-                self.state.mark_slot_as_obtained(self.prev_agent_act.ask_id)
-                return self._confirm()
-            elif user_act.type is UserActionType.NEGATE:
-                self.state.mark_slot_as_empty(self.prev_agent_act.confirm_id)
-                return self._ask_confirm_or_close()
-            else:
-                raise ValueError("User-act of type {} is not supported when"
-                                 "previous agent act was {}"
-                                 .format(user_act.type.value,
-                                         self.prev_agent_act.type.value))
-
-        # If the user wants to end the conversation, the agent should oblidge.
-        if user_act.type is UserActionType.CLOSE:
+            return self._ask_confirm_or_close()
+        elif self.prev_agent_act.type is AgentActionType.CLOSE:
             return AgentActions.close.value
+        else:
+            return self.prev_agent_act
+
+    def _handle_one_slot(self, user_act):
+        """Returns an appropriate agent action after user provides a slot.
+
+        Args:
+            user_act (UserAction): User's most recent action.
+
+        Returns:
+            AgentAction: The action to be taken.
+
+        Raises:
+            ValueError: Invalid previous agent action.
+        """
+        assert user_act.type is UserActionType.ONE_SLOT, (
+            "Invalid user action: {} in method: {}"
+            .format(user_act, self._handle_one_slot.__name__))
+
+        # On being provided with one slot by the user, the agent marks
+        # it "OBTAINED" and goes for confirmation if its last action was a
+        # greeting or a request for that slot. If the agent requested for an
+        # implicit confirmation, then the slot that was meant to be confirmed
+        # is marked "CONFIRMED", and the new slot provided by the user is
+        # marked "OBTAINED"; the agent, then, goes for a confirmation. If the
+        # user wants to terminate the session, the agent obliges. In all the
+        # other cases, the agent repeats its previous action.
+
+        if (self.prev_agent_act.type is AgentActionType.GREET or
+                self.prev_agent_act.type is AgentActionType.ASK_SLOT):
+            self.state.mark_slot_as_obtained(self.prev_agent_act.ask_id, True)
+            return self._confirm()
+        elif self.prev_agent_act.type is AgentActionType.CONFIRM_ASK:
+            # Mark the slot for which implicit confirmation was requested
+            # as "CONFIRMED".
+            self.state.mark_slot_as_confirmed(self.prev_agent_act.confirm_id)
+            # Update the slot for which the user provided information.
+            self.state.mark_slot_as_obtained(self.prev_agent_act.ask_id)
+            return self._confirm()
+        elif self.prev_agent_act.type is AgentActionType.CLOSE:
+            return AgentActions.close.value
+        elif self.prev_agent_act.type is AgentActionType.EXPLICIT_CONFIRM:
+            return self.prev_agent_act
+        else:
+            raise ValueError("Invalid previous agent act {} when user-act "
+                             "is {}".format(self.prev_agent_act.type.value,
+                                            user_act.type.value))
+
+    def _handle_all_slots(self, user_act):
+        """Returns an appropriate agent action after user provides all slots.
+
+        Args:
+            user_act (UserAction): User's most recent action.
+
+        Returns:
+            AgentAction: The action to be taken.
+
+        Raises:
+            ValueError: Invalid previous agent action.
+        """
+        assert user_act.type is UserActionType.ALL_SLOTS, (
+            "Invalid user action: {} in method: {}"
+            .format(user_act, self._handle_all_slots.__name__))
+
+        # On being provided with all slots by the user, the agent marks
+        # all of them "OBTAINED" and goes for confirmation if its last action
+        # was either a greeting or a slot request. If the agent requested for
+        # an implicit confirmation, then the slot that was meant to be
+        # confirmed is marked "CONFIRMED", and all slots are marked "OBTAINED",
+        # and the agent, then, goes for a confirmation. If the user wants to
+        # terminate the session, the agent obligesIn all other cases, the
+        # agent repeats its previous action.
+
+        if (self.prev_agent_act.type is AgentActionType.GREET or
+                self.prev_agent_act.type is AgentActionType.ASK_SLOT):
+            self._mark_all_slots_as_obtained()
+            return self._ask_confirm_or_close()
+        elif self.prev_agent_act.type is AgentActionType.CONFIRM_ASK:
+            # Mark the slot for which implicit confirmation was requested
+            # as "CONFIRMED".
+            self.state.mark_slot_as_confirmed(self.prev_agent_act.confirm_id)
+            # Update all slots as "OBTAINED".
+            self._mark_all_slots_as_obtained()
+            return self._confirm()
+        elif self.prev_agent_act.type is AgentActionType.CLOSE:
+            return AgentActions.close.value
+        elif self.prev_agent_act.type is AgentActionType.EXPLICIT_CONFIRM:
+            return self.prev_agent_act
+        else:
+            raise ValueError("Invalid previous agent act {} when user-act "
+                             "is {}".format(self.prev_agent_act.type.value,
+                                            user_act.type.value))
+
+    def _handle_confirmation(self, user_act):
+        """Returns an appropriate agent action after user confirms a slot.
+
+        Args:
+            user_act (UserAction): User's most recent action.
+
+        Returns:
+            AgentAction: The action to be taken.
+
+        Raises:
+            ValueError: Invalid previous agent action.
+        """
+        assert user_act.type is UserActionType.CONFIRM, (
+            "Invalid user action: {} in method: {}"
+            .format(user_act, self._handle_confirmation.__name__))
+
+        # On being provided with a confirmation for a slot by the user, the
+        # agent marks that slot "CONFIRMED" if it asked for an explicit or an
+        # implicit confirmation for that slot. If the user wants to terminate
+        # the session, the agent obliges. In all other cases, the agent repeats
+        # its previous action.
+        if (self.prev_agent_act.type is AgentActionType.EXPLICIT_CONFIRM or
+                self.prev_agent_act.type is AgentActionType.CONFIRM_ASK):
+            # If the user confirms the same slot as the one whose confirmation
+            # was sought either explicitly or implicitly, mark it as
+            # "CONFIRMED". Otherwise, repeat.
+            if self.prev_agent_act.confirm_id == user_act.slot_id:
+                self.state.mark_slot_as_confirmed(user_act.slot_id)
+                return self._ask_confirm_or_close()
+            else:
+                return self.prev_agent_act
+        elif self.prev_agent_act.type is AgentActionType.CLOSE:
+            return AgentActions.close.value
+        elif (self.prev_agent_act.type is AgentActionType.GREET or
+              self.prev_agent_act.type is AgentActionType.ASK_SLOT):
+            return self.prev_agent_act
+        else:
+            raise ValueError("Invalid previous agent act {} when user-act "
+                             "is {}".format(self.prev_agent_act.type.value,
+                                            user_act.type.value))
+
+    def _handle_negation(self, user_act):
+        """Returns an appropriate agent action after user negates a slot.
+
+        Args:
+            user_act (UserAction): User's most recent action.
+
+        Returns:
+            AgentAction: The action to be taken.
+
+        Raises:
+            ValueError: Invalid previous agent action.
+        """
+        assert user_act.type is UserActionType.NEGATE, (
+            "Invalid user action: {} in method: {}"
+            .format(user_act, self._handle_negation.__name__))
+
+        # On being provided with a negation for a slot by the user, the
+        # agent marks that slot "EMPTY" if it asked for an explicit or an
+        # implicit negation for that slot. If the user wants to terminate
+        # the session, the agent obliges. In all other cases, the agent repeats
+        # its previous action.
+        if (self.prev_agent_act.type is AgentActionType.EXPLICIT_CONFIRM or
+                self.prev_agent_act.type is AgentActionType.CONFIRM_ASK):
+            # If the user negates the same slot as the one whose confirmation
+            # was sought either explicitly or implicitly, mark it as
+            # "EMPTY". Otherwise, repeat.
+            if self.prev_agent_act.confirm_id == user_act.slot_id:
+                self.state.mark_slot_as_empty(user_act.slot_id)
+                return self._ask_confirm_or_close()
+            else:
+                return self.prev_agent_act
+        elif self.prev_agent_act.type is AgentActionType.CLOSE:
+            return AgentActions.close.value
+        elif (self.prev_agent_act.type is AgentActionType.GREET or
+              self.prev_agent_act.type is AgentActionType.ASK_SLOT):
+            return self.prev_agent_act
+        else:
+            raise ValueError("Invalid previous agent act {} when user-act "
+                             "is {}".format(self.prev_agent_act.type.value,
+                                            user_act.type.value))
+
+    def _handle_close(self, user_act):
+        """Returns an appropriate agent action after user wishes to terminate.
+
+        Args:
+            user_act (UserAction): User's most recent action.
+
+        Returns:
+            AgentAction: The action to be taken.
+        """
+        assert user_act.type is UserActionType.CLOSE, (
+            "Invalid user action: {} in method: {}"
+            .format(user_act, self._handle_close.__name__))
+
+        # If the user wants to terminate the session, the agent always
+        # obliges.
+
+        return AgentActions.close.value
 
     def _mark_all_slots_as_obtained(self):
         """Marks all slots "OBTAINED"
@@ -202,18 +360,25 @@ class Agent(object):
 
     def _explicit_confirm(self):
         """Returns an action to explicitly confirm an unconfirmed slot.
+        If there is no slot that can be confirmed, then it invokes the
+        `_ask_confirm_or_close` method to return an appropriate action.
 
         An "unconfirmed" slot is one which is marked "OBTAINED", but not yet
         "CONFIRMED".
 
         Returns:
-            AgentAction: An action to explicitly confirm a slot.
+            AgentAction: An action to explicitly confirm a slot, or another
+                appropriate action if no such slot is available.
         """
-        return AgentActions.explicit_confirm.value[self.prev_agent_act.ask_id]
+        unconfirmed_slot_id = self.state.get_unconfirmed_slot()
+        if unconfirmed_slot_id is not None:
+            return AgentActions.explicit_confirm.value[unconfirmed_slot_id]
+        else:
+            return self._ask_confirm_or_close()
 
     def _implicit_confirm(self):
-        """Returns an action to implicitly confirm an unconfirmed slot. An
-        explicit confirmation is returned if there is not EMPTY slot.
+        """Returns an action to implicitly confirm an unconfirmed slot. The
+        `_explicit_confirm` method is invoked if there is not EMPTY slot.
 
         An "unconfirmed" slot is one which is marked "OBTAINED", but not yet
         "CONFIRMED".
@@ -222,13 +387,14 @@ class Agent(object):
             AgentAction: An action to implicitly confirm a slot, if possible.
         """
         empty_slot_id = self.state.get_empty_slot()
-        confirm_slot_id = self.prev_agent_act.ask_id
+        unconfirmed_slot_id = self.state.get_unconfirmed_slot()
 
         # If there is no EMPTY slot, implicit confirmation isn't possible
         # because there isn't a slot left to request alongside the
-        # implicit confirmation.
+        # implicit confirmation. In such a case, leave it upto the
+        # `_explicit_confirm` method to pick an appropriate action.
         if empty_slot_id is None:
-            return AgentActions.explicit_confirm.value[confirm_slot_id]
+            return self._explicit_confirm()
         else:
             return (AgentActions.confirm_ask
-                    .value[confirm_slot_id][empty_slot_id])
+                    .value[unconfirmed_slot_id][empty_slot_id])
