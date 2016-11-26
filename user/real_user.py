@@ -3,6 +3,7 @@
 from numpy.random import randint
 
 from user_action import UserActions
+from user_features import UserFeatures
 from user_policy import UserPolicy
 from user_state import UserState
 from utils.params import AgentActionType, NUM_SLOTS
@@ -14,6 +15,7 @@ class RealUser(object):
     state and picks actions in response to agent's actions using some policy.
 
     Attributes:
+        features (UserFeatures): Feature class for user's state-action space.
         policy (UserPolicy): Policy to be followed by the user.
         state (UserState): Real user's current state.
     """
@@ -21,6 +23,7 @@ class RealUser(object):
     def __init__(self):
         self.state = UserState()
         self.policy = UserPolicy(UserPolicyType.handcrafted)
+        self.features = UserFeatures()
 
     def take_turn(self, system_act):
         """Executes a user turn based on the agent's most recent action.
