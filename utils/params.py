@@ -11,6 +11,15 @@ NUM_SLOTS = 3
 # Controls the fraction of total confirmations that are explicit.
 AGENT_EXPLICIT_VS_IMPLICIT_CONFIRMATION_PROBABILITY = 0.8
 
+# Discount factor
+GAMMA = 0.95
+
+
+# User policy types
+class UserPolicyType(Enum):
+    handcrafted = 1
+    random = 2
+
 
 class UserStateStatus(Enum):
     EMPTY = "empty"

@@ -1,8 +1,9 @@
 """Dialog policy for users."""
 
-from numpy.random import choice
+import numpy as np
 
-from utils.params import AgentActionType, UserActionType
+from user_features import UserFeatures
+from utils.params import AgentActionType, UserActionType, UserPolicyType
 
 
 class UserPolicy(object):
@@ -28,14 +29,19 @@ class UserPolicy(object):
             choosing the corresponding action in `actions`.
     """
 
-    def __init__(self):
+    def __init__(self, policy_type):
+        """Class constructor
+
+        Args:
+            policy_type (UserPolicyType): Type of user policy
+        """
         self.actions = [user_action for user_action in UserActionType]
         self.action_index_map = {action: i for i, action in
                                  enumerate(self.actions)}
         self.policy = {action_type: [0.] * len(self.actions)
                        for action_type in AgentActionType}
 
-        self._build_policy()
+        self._build_policy(policy_type)
 
     def get_action(self, user_state):
         """Samples the type of action to be taken from the policy given
@@ -49,11 +55,22 @@ class UserPolicy(object):
         """
         state = user_state.system_act.type
         probabilities = self.policy[state]
-        sampled_action = choice(self.actions, 1, p=probabilities)[0]
+        sampled_action = np.random.choice(self.actions, 1, p=probabilities)[0]
         return sampled_action   # a UserActionType
 
-    def _build_policy(self):
-        """Defines a policy for the user.
+    def _build_policy(self, policy_type):
+        """Builds a user policy.
+
+        Args:
+            policy_type (UserPolicyType): Type of user policy.
+        """
+        if policy_type == UserPolicyType.handcrafted:
+            self._build_handcrafted_policy()
+        elif policy_type == UserPolicyType.random:
+            self._build_random_policy()
+
+    def _build_handcrafted_policy(self):
+        """Defines a hand-crafter policy for the user.
         """
         silent = self.action_index_map[UserActionType.SILENT]
         all_slots = self.action_index_map[UserActionType.ALL_SLOTS]
@@ -76,6 +93,14 @@ class UserPolicy(object):
         self.policy[AgentActionType.CLOSE][close] = 1.0
 
         self._check_policy_correctness()
+
+    def _build_random_policy(self):
+        """Defines a random policy.
+        """
+        alpha = 5 * np.ones(len(self.actions))  # Parameter for Dirichlet
+        for state in self.policy:
+            probabilities = np.random.dirichlet(alpha).tolist()
+            self.policy[state] = probabilities
 
     def _check_policy_correctness(self):
         """Validates the defined policy by checking for valid probablity

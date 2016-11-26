@@ -5,8 +5,8 @@ from numpy.random import randint
 from user_action import UserActions
 from user_policy import UserPolicy
 from user_state import UserState
-from utils.params import AgentActionType, NUM_SLOTS, UserActionType
-from utils.params import UserStateStatus
+from utils.params import AgentActionType, NUM_SLOTS
+from utils.params import UserActionType, UserStateStatus, UserPolicyType
 
 
 class RealUser(object):
@@ -20,7 +20,7 @@ class RealUser(object):
 
     def __init__(self):
         self.state = UserState()
-        self.policy = UserPolicy()
+        self.policy = UserPolicy(UserPolicyType.handcrafted)
 
     def take_turn(self, system_act):
         """Executes a user turn based on the agent's most recent action.
