@@ -1,4 +1,4 @@
-"""Handcrafted dialog policy for the dialog manager."""
+"""Handcrafted dialog policy for the dialog agent."""
 
 from numpy.random import binomial
 
@@ -9,10 +9,10 @@ from utils.params import AgentActionType, AgentStateStatus, UserActionType
 from utils.params import NUM_SLOTS
 
 
-class DialogManager(object):
-    """Class for the agent in a dialog system. The agent is also called the
-    "Dilog Manager". It keeps track of the agent's state, and picks actions in
-    response to user's actions based on a handcoded policy.
+class Agent(object):
+    """Class for the agent in a dialog system. It keeps track of the agent's
+    state, and picks actions in response to user's actions based on a
+    handcoded policy.
 
     Attributes:
         prev_agent_act (AgentAction): Agent's action at the last timestep.

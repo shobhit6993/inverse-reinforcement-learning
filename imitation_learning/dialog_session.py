@@ -1,6 +1,6 @@
 """Dialog session."""
 
-from agent.dialog_manager import DialogManager
+from agent.agent import Agent
 from user.user import User
 from user.user_action import UserAction
 from utils.params import AgentActionType, NUM_SESSIONS_IN_CORPUS
@@ -11,7 +11,7 @@ class DialogSession:
     """Class for a single dialog session.
 
     Attributes:
-        agent (DialogManager): The dialog agent, also called Dialog Manager.
+        agent (Agent): The dialog agent.
         user (User): The user participating in the dialog.
         user_log (list of tuples): Log of (state, action) pairs that the user
             underwent in this dialog session in the form of a list of tuples of
@@ -71,7 +71,7 @@ def generate_dialog_corpus(num_sessions=NUM_SESSIONS_IN_CORPUS):
         num_sessions (int, optional): Number of dialog sessions to be executed.
     """
     user = User(UserPolicyType.handcrafted)
-    agent = DialogManager()
+    agent = Agent()
     for _ in xrange(num_sessions):
         session = DialogSession(user, agent)
         session.start()
@@ -83,6 +83,6 @@ def run_single_session():
     """Executes a single dialog session.
     """
     user = User(UserPolicyType.handcrafted)
-    agent = DialogManager()
+    agent = Agent()
     session = DialogSession(user, agent)
     session.start()

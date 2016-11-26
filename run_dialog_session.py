@@ -1,6 +1,6 @@
 """Run a single dialog session."""
 
-from agent.dialog_manager import DialogManager
+from agent.agent import Agent
 from imitation_learning.dialog_session import DialogSession
 from user.user import User
 from utils.params import UserPolicyType
@@ -10,7 +10,7 @@ def run_single_session():
     """Executes a single dialog session.
     """
     user = User(UserPolicyType.handcrafted)
-    agent = DialogManager()
+    agent = Agent()
     session = DialogSession(user, agent)
     session.start()
 
