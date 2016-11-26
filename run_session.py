@@ -1,7 +1,7 @@
 """Run dialog session."""
 
 from agent.dialog_manager import DialogManager
-from user.real_user import RealUser
+from user.user import User
 from user.user_action import UserAction
 from utils.params import AgentActionType, NUM_SESSIONS_IN_CORPUS
 from utils.params import UserActionType, UserPolicyType
@@ -12,7 +12,7 @@ class DialogSession:
 
     Attributes:
         agent (DialogManager): The dialog agent, also called Dialog Manager.
-        user (RealUser): The user participating in the dialog.
+        user (User): The user participating in the dialog.
     """
 
     def __init__(self, user_policy_type):
@@ -21,7 +21,7 @@ class DialogSession:
         Args:
             user_policy_type (UserPolicyType): Type of user policy.
         """
-        self.user = RealUser(user_policy_type)
+        self.user = User(user_policy_type)
         self.agent = DialogManager()
 
     def start(self):
