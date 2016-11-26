@@ -33,7 +33,7 @@ class UserPolicy(object):
         """Class constructor
 
         Args:
-            policy_type (UserPolicyType): Type of user policy
+            policy_type (UserPolicyType): Type of user policy.
         """
         self.actions = [user_action for user_action in UserActionType]
         self.action_index_map = {action: i for i, action in

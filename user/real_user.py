@@ -7,7 +7,7 @@ from user_features import UserFeatures
 from user_policy import UserPolicy
 from user_state import UserState
 from utils.params import AgentActionType, NUM_SLOTS
-from utils.params import UserActionType, UserStateStatus, UserPolicyType
+from utils.params import UserActionType, UserStateStatus
 
 
 class RealUser(object):
@@ -20,9 +20,14 @@ class RealUser(object):
         state (UserState): Real user's current state.
     """
 
-    def __init__(self):
+    def __init__(self, policy_type):
+        """Class constructor
+
+        Args:
+            policy_type (UserPolicyType): Type of user policy.
+        """
         self.state = UserState()
-        self.policy = UserPolicy(UserPolicyType.handcrafted)
+        self.policy = UserPolicy(policy_type)
         self.features = UserFeatures()
 
     def take_turn(self, system_act):

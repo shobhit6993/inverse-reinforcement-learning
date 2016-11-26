@@ -4,7 +4,7 @@ from agent.dialog_manager import DialogManager
 from user.real_user import RealUser
 from user.user_action import UserAction
 from utils.params import AgentActionType, NUM_SESSIONS_IN_CORPUS
-from utils.params import UserActionType
+from utils.params import UserActionType, UserPolicyType
 
 
 class DialogSession:
@@ -15,8 +15,13 @@ class DialogSession:
         user (RealUser): The user participating in the dialog.
     """
 
-    def __init__(self):
-        self.user = RealUser()
+    def __init__(self, user_policy_type):
+        """Class constructor
+
+        Args:
+            user_policy_type (UserPolicyType): Type of user policy.
+        """
+        self.user = RealUser(user_policy_type)
         self.agent = DialogManager()
 
     def start(self):
@@ -43,7 +48,7 @@ def generate_dialog_corpus(num_sessions=NUM_SESSIONS_IN_CORPUS):
         num_sessions (int, optional): Number of dialog sessions to be executed.
     """
     for _ in xrange(num_sessions):
-        session = DialogSession()
+        session = DialogSession(UserPolicyType.handcrafted)
         session.start()
         print("----")
 
@@ -51,7 +56,7 @@ def generate_dialog_corpus(num_sessions=NUM_SESSIONS_IN_CORPUS):
 def run_single_seesion():
     """Executes a single dialog session.
     """
-    session = DialogSession()
+    session = DialogSession(UserPolicyType.handcrafted)
     session.start()
 
 
