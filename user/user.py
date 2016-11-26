@@ -40,8 +40,8 @@ class User(object):
             UserAction: User's next action.
         """
         next_action = self.update_state_and_get_next_action(system_act)
-        print("User -- [State] " + str(self.state))
-        print("User -- (Action) " + str(next_action))
+        # print("User -- [State] " + str(self.state))
+        # print("User -- (Action) " + str(next_action))
         # print("U:" + next_action.type.value)
         return next_action
 

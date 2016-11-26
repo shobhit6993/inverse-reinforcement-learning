@@ -3,7 +3,7 @@
 from agent.agent import Agent
 from user.user import User
 from user.user_action import UserAction
-from utils.params import AgentActionType, NUM_SESSIONS_IN_CORPUS
+from utils.params import AgentActionType, NUM_SESSIONS
 from utils.params import UserActionType, UserPolicyType
 
 
@@ -64,7 +64,7 @@ class DialogSession:
 # Sample usage to run a dialog session, or generate a dialog corpus
 ###################################################################
 
-def generate_dialog_corpus(num_sessions=NUM_SESSIONS_IN_CORPUS):
+def generate_dialog_corpus(num_sessions=NUM_SESSIONS):
     """Generates a dialog corpus by executing multiple sessions successively.
 
     Args:

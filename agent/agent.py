@@ -33,7 +33,7 @@ class Agent(object):
         # Agent starts with a GREETING
         self.prev_agent_act = AgentActions.greet.value
         # print("Agent-- [State] " + str(self.state))
-        print("Agent-- (Action) " + str(self.prev_agent_act))
+        # print("Agent-- (Action) " + str(self.prev_agent_act))
         # print("A:" + self.prev_agent_act.type.value)
         return self.prev_agent_act
 
@@ -48,8 +48,8 @@ class Agent(object):
         """
         next_action = self.update_state_and_next_action(user_act)
         self.prev_agent_act = next_action
-        print("Agent-- [State] " + str(self.state))
-        print("Agent-- (Action) " + str(next_action))
+        # print("Agent-- [State] " + str(self.state))
+        # print("Agent-- (Action) " + str(next_action))
         # print("A:" + next_action.type.value)
         return next_action
 
@@ -360,7 +360,7 @@ class Agent(object):
     def _explicit_confirm(self):
         """Returns an action to explicitly confirm an unconfirmed slot.
         If there is no slot that can be confirmed, then it invokes the
-        `_ask_confirm_or_close` method to return an appropriate action.
+        `_ask_or_close` method to return an appropriate action.
 
         An "unconfirmed" slot is one which is marked "OBTAINED", but not yet
         "CONFIRMED".
@@ -373,11 +373,12 @@ class Agent(object):
         if unconfirmed_slot_id is not None:
             return AgentActions.explicit_confirm.value[unconfirmed_slot_id]
         else:
-            return self._ask_confirm_or_close()
+            return self._ask_or_close()
 
     def _implicit_confirm(self):
         """Returns an action to implicitly confirm an unconfirmed slot. The
-        `_explicit_confirm` method is invoked if there is not EMPTY slot.
+        `_explicit_confirm` method is invoked if there is no EMPTY slot. The
+        `_ask_or_close` method is invokes if there is not unconfirmed slot.
 
         An "unconfirmed" slot is one which is marked "OBTAINED", but not yet
         "CONFIRMED".
@@ -391,9 +392,12 @@ class Agent(object):
         # If there is no EMPTY slot, implicit confirmation isn't possible
         # because there isn't a slot left to request alongside the
         # implicit confirmation. In such a case, leave it upto the
-        # `_explicit_confirm` method to pick an appropriate action.
+        # `_explicit_confirm` method to pick an appropriate action. If there is
+        # no unconfirmed slot, call the `_ask_or_close` method.
         if empty_slot_id is None:
             return self._explicit_confirm()
+        elif unconfirmed_slot_id is None:
+            return self._ask_or_close()
         else:
             return (AgentActions.confirm_ask
                     .value[unconfirmed_slot_id][empty_slot_id])
