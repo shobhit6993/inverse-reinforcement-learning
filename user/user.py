@@ -101,9 +101,23 @@ class User(object):
                 return UserActions.one_slot.value[random_slot_id]
 
         elif action_type is UserActionType.CONFIRM:
-            return UserActions.confirm.value[confirm_slot_id]
+            # If agent asked for the confirmation of a slot, return UserAction
+            # corresponding to that slot. Otherwise, return UserAction
+            # corresponding to a random slot.
+            if confirm_slot_id is not None:
+                return UserActions.confirm.value[confirm_slot_id]
+            else:
+                return UserActions.confirm.value[random_slot_id]
+
         elif action_type is UserActionType.NEGATE:
-            return UserActions.negate.value[confirm_slot_id]
+            # If agent asked for the confirmation of a slot, return UserAction
+            # corresponding to that slot. Otherwise, return UserAction
+            # corresponding to a random slot.
+            if confirm_slot_id is not None:
+                return UserActions.negate.value[confirm_slot_id]
+            else:
+                return UserActions.negate.value[random_slot_id]
+
         elif action_type is UserActionType.CLOSE:
             return UserActions.close.value
 

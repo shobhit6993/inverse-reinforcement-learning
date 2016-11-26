@@ -124,22 +124,29 @@ class Agent(object):
 
         # On being provided with one slot by the user, the agent marks
         # it "OBTAINED" and goes for confirmation if its last action was a
-        # greeting or a request for that slot. If the agent requested for an
-        # implicit confirmation, then the slot that was meant to be confirmed
-        # is marked "CONFIRMED", and the new slot provided by the user is
-        # marked "OBTAINED"; the agent, then, goes for a confirmation. If the
-        # user wants to terminate the session, the agent obliges. In all the
+        # greeting. If agent's requested for a slot, then the requested slot is
+        # marked "OBTAINED", not the provided slot. If the agent requested for
+        # an implicit confirmation, then the slot that's meant to be confirmed
+        # is marked "CONFIRMED", and the slot requested -- potentially
+        # different from the one provided -- is marked "OBTAINED"; the agent,
+        # then, goes for a confirmation. If the user wants to terminate the
+        # session, the agent obliges. In all the
         # other cases, the agent repeats its previous action.
 
-        if (self.prev_agent_act.type is AgentActionType.GREET or
-                self.prev_agent_act.type is AgentActionType.ASK_SLOT):
+        if self.prev_agent_act.type is AgentActionType.GREET:
+            self.state.mark_slot_as_obtained(user_act.slot_id, True)
+            return self._confirm()
+        elif self.prev_agent_act.type is AgentActionType.ASK_SLOT:
+            # Mark the slot requested by agent -- potentially different from
+            # the one provided by the user -- as "OBTAINED".
             self.state.mark_slot_as_obtained(self.prev_agent_act.ask_id, True)
             return self._confirm()
         elif self.prev_agent_act.type is AgentActionType.CONFIRM_ASK:
             # Mark the slot for which implicit confirmation was requested
             # as "CONFIRMED".
             self.state.mark_slot_as_confirmed(self.prev_agent_act.confirm_id)
-            # Update the slot for which the user provided information.
+            # Update the slot for which the agent requested information.
+            # Note that this might not be the slot user provided.
             self.state.mark_slot_as_obtained(self.prev_agent_act.ask_id)
             return self._confirm()
         elif self.prev_agent_act.type is AgentActionType.CLOSE:
@@ -169,27 +176,17 @@ class Agent(object):
 
         # On being provided with all slots by the user, the agent marks
         # all of them "OBTAINED" and goes for confirmation if its last action
-        # was either a greeting or a slot request. If the agent requested for
-        # an implicit confirmation, then the slot that was meant to be
-        # confirmed is marked "CONFIRMED", and all slots are marked "OBTAINED",
-        # and the agent, then, goes for a confirmation. If the user wants to
-        # terminate the session, the agent obligesIn all other cases, the
-        # agent repeats its previous action.
+        # was a greeting. If the user wants to terminate the session, the agent
+        # obliges. In all other cases, the agent repeats its previous action.
 
-        if (self.prev_agent_act.type is AgentActionType.GREET or
-                self.prev_agent_act.type is AgentActionType.ASK_SLOT):
+        if self.prev_agent_act.type is AgentActionType.GREET:
             self._mark_all_slots_as_obtained()
             return self._ask_confirm_or_close()
-        elif self.prev_agent_act.type is AgentActionType.CONFIRM_ASK:
-            # Mark the slot for which implicit confirmation was requested
-            # as "CONFIRMED".
-            self.state.mark_slot_as_confirmed(self.prev_agent_act.confirm_id)
-            # Update all slots as "OBTAINED".
-            self._mark_all_slots_as_obtained()
-            return self._confirm()
         elif self.prev_agent_act.type is AgentActionType.CLOSE:
             return AgentActions.close.value
-        elif self.prev_agent_act.type is AgentActionType.EXPLICIT_CONFIRM:
+        elif (self.prev_agent_act.type is AgentActionType.EXPLICIT_CONFIRM or
+              self.prev_agent_act.type is AgentActionType.ASK_SLOT or
+              self.prev_agent_act.type is AgentActionType.CONFIRM_ASK):
             return self.prev_agent_act
         else:
             raise ValueError("Invalid previous agent act {} when user-act "
@@ -217,6 +214,7 @@ class Agent(object):
         # implicit confirmation for that slot. If the user wants to terminate
         # the session, the agent obliges. In all other cases, the agent repeats
         # its previous action.
+
         if (self.prev_agent_act.type is AgentActionType.EXPLICIT_CONFIRM or
                 self.prev_agent_act.type is AgentActionType.CONFIRM_ASK):
             # If the user confirms the same slot as the one whose confirmation
@@ -258,6 +256,7 @@ class Agent(object):
         # implicit negation for that slot. If the user wants to terminate
         # the session, the agent obliges. In all other cases, the agent repeats
         # its previous action.
+
         if (self.prev_agent_act.type is AgentActionType.EXPLICIT_CONFIRM or
                 self.prev_agent_act.type is AgentActionType.CONFIRM_ASK):
             # If the user negates the same slot as the one whose confirmation
