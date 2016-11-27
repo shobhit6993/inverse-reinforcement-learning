@@ -50,6 +50,11 @@ class UserState(object):
     def mark_slot_as_comfirmed(self, slot_id):
         self.slots[slot_id] = UserStateStatus.CONFIRMED
 
+    def reset(self):
+        """Resets the state by marking all slots EMPTY."""
+        self._init_slots()
+        self.agent_act = None
+
     def _init_slots(self):
         for id_ in xrange(NUM_SLOTS):
             self.mark_slot_as_empty(id_)

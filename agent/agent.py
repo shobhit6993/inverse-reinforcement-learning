@@ -82,6 +82,11 @@ class Agent(object):
         else:
             raise ValueError("Invalid user-act {}".format(user_act))
 
+    def reset(self):
+        """Resets the Agent."""
+        self.state.reset()
+        self.prev_agent_act = None
+
     def _handle_silence(self, user_act):
         """Returns an appropriate agent action after user silence.
 

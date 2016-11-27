@@ -20,11 +20,11 @@ class User(object):
         state (UserState): User's current state.
     """
 
-    def __init__(self, policy_type):
+    def __init__(self, policy_type=None):
         """Class constructor
 
         Args:
-            policy_type (UserPolicyType): Type of user policy.
+            policy_type (UserPolicyType or None): Type of user policy.
         """
         self.state = UserState()
         self.policy = UserPolicy(policy_type)
@@ -69,6 +69,11 @@ class User(object):
         # Update state to reflect the action that is about to be taken.
         self._update_state(action)
         return action
+
+    def reset(self):
+        """Resets the user."""
+        self.state.reset()
+        self.policy.reset()
 
     def _build_action(self, action_type):
         """Builds a full action based on the sampled action type.

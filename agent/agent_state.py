@@ -68,6 +68,10 @@ class AgentState(object):
                 return slot_id
         return None
 
+    def reset(self):
+        """Resets the state so that all slots are marked "EMPTY"."""
+        self._init_slots()
+
     def _init_slots(self):
         """Initializes the `slots` dictionary with all slots marked "EMPTY".
         """
