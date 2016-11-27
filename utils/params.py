@@ -26,6 +26,9 @@ Q_DECAY_RATE = 0.999
 # Degree of randomness in a poliy.
 EPSILON = 0.1
 
+# Rate of decay for degree of randomness in Q-learning policies.
+EPSILON_DECAY_RATE = 0.999
+
 # Threshold for IRL
 THRESHOLD = 0.001
 

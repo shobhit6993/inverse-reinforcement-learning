@@ -4,8 +4,9 @@ import numpy as np
 
 from reward import Reward
 from imitation_learning.dialog_session import DialogSession
+from utils.params import AgentActionType, UserActionType
+from utils.params import EPSILON, EPSILON_DECAY_RATE, GAMMA
 from utils.params import Q_DECAY_RATE, Q_LEARNING_EPISODES, Q_LEARNING_RATE
-from utils.params import AgentActionType, UserActionType, EPSILON, GAMMA
 
 
 class MDPSolver(object):
@@ -41,6 +42,7 @@ class QLearningSolver(MDPSolver):
 
     Attributes:
         alpha (float): Learning rate
+        epsilon (float): Degree of randomness in policy.
         gamma (float): Discount factor
         q (dict): Q-value function. The structure of this function should
             be exactly same as that of the `UserPolicy.poliy` attribute.
@@ -51,6 +53,7 @@ class QLearningSolver(MDPSolver):
 
         self.alpha = Q_LEARNING_RATE
         self.gamma = GAMMA
+        self.epsilon = EPSILON
         self.q = {}
 
         self._initialize_q_values()
@@ -67,7 +70,7 @@ class QLearningSolver(MDPSolver):
             session = DialogSession(self.user, self.agent)
 
             # Update user's policy based on the updated Q-values.
-            self.user.policy.build_policy_from_q_values(self.q, EPSILON)
+            self.user.policy.build_policy_from_q_values(self.q, self.epsilon)
 
             # Start the dialog session by having the dialog agent make the
             # first move.
@@ -84,7 +87,10 @@ class QLearningSolver(MDPSolver):
                 self._update_q_value(curr_state, action, next_state, reward)
                 curr_state = next_state
 
+            # Decay the learning rate.
             self.alpha *= Q_DECAY_RATE
+            # Decay the degree of randomness.
+            self.epsilon *= EPSILON_DECAY_RATE
 
     def _initialize_q_values(self):
         """Initializes Q-values.
