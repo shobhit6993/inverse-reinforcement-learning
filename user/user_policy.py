@@ -46,6 +46,9 @@ class UserPolicy(object):
 
         self._build_policy(policy_type)
 
+    def __str__(self):
+        return str(self.policy)
+
     def get_action(self, user_state):
         """Samples the type of action to be taken from the policy given
         current state.

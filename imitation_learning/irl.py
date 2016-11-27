@@ -1,3 +1,4 @@
+import pickle
 import numpy as np
 
 from agent.agent import Agent
@@ -7,6 +8,7 @@ from user.user import User
 from user.user_features import UserFeatures
 from user_simulation_irl import UserSimulationIRL
 from utils.params import UserPolicyType, GAMMA, NUM_SESSIONS_FE, THRESHOLD
+from utils.params import SIMULATIONS_DUMP_FILE
 
 
 class IRL(object):
@@ -73,11 +75,18 @@ class IRL(object):
         mu_curr = self._calc_feature_expectation(sim_user, self.agent())
 
         # Save the simulated user.
-        self._save_simulated_user(random_user, w, mu_e - mu_curr)
+        self._save_simulated_user(sim_user, w, mu_e, mu_curr)
 
         mu_bar_prev = mu_bar_curr
 
+        steps = 0
         while t >= THRESHOLD:
+            print("Step-{}".format(steps))
+            # Dump the list of user simulations every 10 step.
+            if steps % 10 == 0:
+                self._dump_simulations()
+            raw_input()
+
             numerator = np.dot((mu_curr - mu_bar_prev), (mu_e - mu_bar_prev))
             denominator = np.dot((mu_curr - mu_bar_prev),
                                  (mu_curr - mu_bar_prev))
@@ -108,9 +117,14 @@ class IRL(object):
             mu_curr = self._calc_feature_expectation(sim_user, self.agent())
 
             # Save the simulated user.
-            self._save_simulated_user(random_user, w, mu_e - mu_curr)
+            self._save_simulated_user(random_user, w, mu_e, mu_curr)
 
             mu_bar_prev = mu_bar_curr
+            steps += 1
+
+        # Dump the final list of user simulations.
+        if steps % 10 == 0:
+            self._dump_simulations()
 
     def _calc_feature_expectation(self, user, agent,
                                   num_sessions=NUM_SESSIONS_FE):
@@ -141,16 +155,25 @@ class IRL(object):
         feature_expectation /= num_sessions
         return feature_expectation
 
-    def _save_simulated_user(self, user, weights, distance_to_expert):
+    def _save_simulated_user(self, user, weights, expert_fe, simulated_fe):
         """Saves the simulated user built during an iteration of IRL algorithm.
 
         Args:
             user (:obj: User): The learnt user simulation.
             weights (1D numpy.ndarray): The weight vectors characterizing the
                 `Reward` function that gave rise to this user-simulation.
-            distance_to_expert (float): Difference between the feature
-                expectations of the expert user and the simulated user.
+            expert_fe (1d numpy.ndarray): Expert user's feature expectations.
+            simulated_fe (1d numpy.ndarray): Simulated user's feature
+                expectations.
         """
+        distance_to_expert = np.linalg.norm(expert_fe - simulated_fe)
         simulated_user = UserSimulationIRL(user.policy, weights,
                                            distance_to_expert)
         self.simulated_users.append(simulated_user)
+
+    def _dump_simulations(self):
+        """Dumps the list of user simulations, i.e., the
+        `IRL.simulated_users` attribute.
+        """
+        with open(SIMULATIONS_DUMP_FILE, "w") as fout:
+            pickle.dump(self.simulated_users, fout)

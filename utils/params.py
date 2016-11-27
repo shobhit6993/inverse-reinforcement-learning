@@ -1,6 +1,7 @@
 """Parameters and global constants used in the codebase."""
 
 from enum import Enum
+from numpy.random import randint
 
 # Number of dialog sessions to be run for calculation of feature expectations.
 NUM_SESSIONS_FE = 10000
@@ -31,6 +32,9 @@ EPSILON_DECAY_RATE = 0.999
 
 # Threshold for IRL
 THRESHOLD = 0.001
+
+# File where learnt user simulations are dumped periodically
+SIMULATIONS_DUMP_FILE = "./simulations-dump-" + str(randint(1000, 9999))
 
 
 # User policy types
