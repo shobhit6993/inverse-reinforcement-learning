@@ -3,7 +3,7 @@
 from enum import Enum
 
 # Number of dialog sessions to be run for calculation of feature expectations.
-NUM_SESSIONS = 100000
+NUM_SESSIONS_FE = 10000
 
 # Number of slots to be filled.
 NUM_SLOTS = 3
@@ -13,6 +13,18 @@ AGENT_EXPLICIT_VS_IMPLICIT_CONFIRMATION_PROBABILITY = 0.8
 
 # Discount factor
 GAMMA = 0.95
+
+# Number of episodes to run for Q-learning
+Q_LEARNING_EPISODES = 10000
+
+# Rate of decay for learning rate in Q-learning
+DECAY_RATE = 0.999
+
+# Degree of randomness in a poliy.
+EPSILON = 0.1
+
+# Threshold for IRL
+THRESHOLD = 0.001
 
 
 # User policy types
@@ -34,6 +46,7 @@ class AgentStateStatus(Enum):
 
 
 class UserActionType(Enum):
+    __order__ = 'SILENT ALL_SLOTS ONE_SLOT CONFIRM NEGATE CLOSE'
     SILENT = "silent"
     ALL_SLOTS = "provide-all-slots"
     ONE_SLOT = "provide-one-slot"

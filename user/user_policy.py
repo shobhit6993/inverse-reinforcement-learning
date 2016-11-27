@@ -4,6 +4,7 @@ import numpy as np
 
 from user_features import UserFeatures
 from utils.params import AgentActionType, UserActionType, UserPolicyType
+from utils import utils
 
 
 class UserPolicy(object):
@@ -29,16 +30,18 @@ class UserPolicy(object):
             choosing the corresponding action in `actions`.
     """
 
-    def __init__(self, policy_type):
+    def __init__(self, policy_type=None):
         """Class constructor
 
         Args:
-            policy_type (UserPolicyType): Type of user policy.
+            policy_type (UserPolicyType, optional): Type of user policy; None
+                default. None means a valid policy would not be build during
+                creation.
         """
         self.actions = [user_action for user_action in UserActionType]
         self.action_index_map = {action: i for i, action in
                                  enumerate(self.actions)}
-        self.policy = {action_type: [0.] * len(self.actions)
+        self.policy = {action_type: np.zeros(len(self.actions))
                        for action_type in AgentActionType}
 
         self._build_policy(policy_type)
@@ -58,15 +61,62 @@ class UserPolicy(object):
         sampled_action = np.random.choice(self.actions, 1, p=probabilities)[0]
         return sampled_action   # a UserActionType
 
+    def build_policy_from_q_values(self, q_function, epsilon):
+        """Defines an epsilon-greedy policy derived from the Q-values.
+
+        Args:
+            q_function (dict): The Q-value function. It must have the same
+                structure as the `policy` attribute, except that the values in
+                the lists represent Q-values.
+            epsilon (float): Degree of randomness required in the policy.
+        """
+        assert len(q_function) == len(self.policy)
+        for state in self.policy:
+            assert state in q_function
+            assert type(q_function[state]) is np.ndarray
+            assert q_function[state].shape == self.policy[state].shape
+
+        for state in self.policy:
+            q_values = q_function[state]
+            n = len(q_values)
+
+            probabilities = self.policy[state]
+            # Assign epsion probability mass to each action.
+            for i in xrange(n):
+                probabilities[i] = epsilon
+
+            # Assign the remaining probability mass to the action with
+            # highest q value.
+            best_action_index = utils.get_index_of_max_element(q_values)
+            probabilities[best_action_index] += 1.0 - np.sum(probabilities)
+
+            # Make sure that the probabilities sum to 1.
+            # If they don't -- due to precision issues -- keep adding the
+            # difference to some element until it they do.
+            sum_of_probabilities = np.sum(probabilities)
+            while sum_of_probabilities != 1.0:
+                diff = 1.0 - sum_of_probabilities
+                random_index = np.random.randint(n)
+                probabilities[random_index] += diff
+                sum_of_probabilities = np.sum(probabilities)
+
+        self._check_policy_correctness()
+
+    def reset(self):
+        """Resets the policy to an invalid, all-zero-probabilities policy."""
+        for state in self.policy:
+            for i in xrange(len(self.actions)):
+                self.policy[state][i] = 0.
+
     def _build_policy(self, policy_type):
         """Builds a user policy.
 
         Args:
-            policy_type (UserPolicyType): Type of user policy.
+            policy_type (UserPolicyType or None): Type of user policy.
         """
-        if policy_type == UserPolicyType.handcrafted:
+        if policy_type is UserPolicyType.handcrafted:
             self._build_handcrafted_policy()
-        elif policy_type == UserPolicyType.random:
+        elif policy_type is UserPolicyType.random:
             self._build_random_policy()
 
     def _build_handcrafted_policy(self):
@@ -107,5 +157,5 @@ class UserPolicy(object):
         values.
         """
         for state, probabilities in self.policy.iteritems():
-            assert sum(probabilities) == 1.0, ("Probabilities don't sum"
-                                               "to 1 for", state)
+            assert np.sum(probabilities) == 1.0, ("Probabilities don't sum to "
+                                                  "1 for {}".format(state))

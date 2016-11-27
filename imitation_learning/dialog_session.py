@@ -3,7 +3,7 @@
 from agent.agent import Agent
 from user.user import User
 from user.user_action import UserAction
-from utils.params import AgentActionType, NUM_SESSIONS
+from utils.params import AgentActionType
 from utils.params import UserActionType, UserPolicyType
 
 
@@ -11,8 +11,9 @@ class DialogSession:
     """Class for a single dialog session.
 
     Attributes:
-        agent (Agent): The dialog agent.
-        user (User): The user participating in the dialog.
+        agent (:obj: Agent): The dialog agent.
+        prev_agent_act (AgentAction): The previous action taken by the agent.
+        user (:obj: User): The user participating in the dialog.
         user_log (list of tuples): Log of (state, action) pairs that the user
             underwent in this dialog session in the form of a list of tuples of
             form (AgentActionType, UserActionType).
@@ -22,6 +23,7 @@ class DialogSession:
         self.user = user
         self.agent = agent
         self.user_log = []
+        self.prev_agent_act = None
 
     def start(self):
         """Executes a dialog session by having the agent and the user take
@@ -45,6 +47,27 @@ class DialogSession:
         """
         self.user_log[:] = []
 
+    def ask_agent_to_start(self):
+        """Makes the dialog agent start the dialog.
+
+        Returns:
+            AgentActionType: The type of action performed by the agent.
+        """
+        self.prev_agent_act = self.agent.start_dialog()
+        return self.prev_agent_act
+
+    def execute_one_step(self):
+        """Executes one step of dialog by making the user act, followed
+        by an action from the agent.
+
+        Returns:
+            UserActionType, AgentActionType: The type of action taken by the
+                user, and it's response from the agent.
+        """
+        user_act = self.user.take_turn(self.prev_agent_act)
+        self.prev_agent_act = self.agent.take_turn(user_act)
+        return user_act.type, self.prev_agent_act.type
+
     def _save_user_state_action(self, user_action):
         """Appends the user's current state and action to the `user_log`.
         The state of the user is the agent's last action; other state
@@ -64,7 +87,7 @@ class DialogSession:
 # Sample usage to run a dialog session, or generate a dialog corpus
 ###################################################################
 
-def generate_dialog_corpus(num_sessions=NUM_SESSIONS):
+def generate_dialog_corpus(num_sessions):
     """Generates a dialog corpus by executing multiple sessions successively.
 
     Args:
