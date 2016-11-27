@@ -17,8 +17,11 @@ GAMMA = 0.95
 # Number of episodes to run for Q-learning
 Q_LEARNING_EPISODES = 10000
 
+# Learning rate for Q-learning
+Q_LEARNING_RATE = 0.1
+
 # Rate of decay for learning rate in Q-learning
-DECAY_RATE = 0.999
+Q_DECAY_RATE = 0.999
 
 # Degree of randomness in a poliy.
 EPSILON = 0.1

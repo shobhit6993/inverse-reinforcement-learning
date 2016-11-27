@@ -4,8 +4,8 @@ import numpy as np
 
 from reward import Reward
 from imitation_learning.dialog_session import DialogSession
-from utils.params import DECAY_RATE, Q_LEARNING_EPISODES, EPSILON
-from utils.params import AgentActionType
+from utils.params import Q_DECAY_RATE, Q_LEARNING_EPISODES, Q_LEARNING_RATE
+from utils.params import AgentActionType, UserActionType, EPSILON, GAMMA
 
 
 class MDPSolver(object):
@@ -44,15 +44,13 @@ class QLearningSolver(MDPSolver):
         gamma (float): Discount factor
         q (dict): Q-value function. The structure of this function should
             be exactly same as that of the `UserPolicy.poliy` attribute.
-        terminal_state (AgentActionType): Terminal state for RL agent (user).
     """
 
     def __init__(self, user, agent, weights):
         super(QLearningSolver, self).__init__(user, agent, weights)
 
-        self.alpha = 0.1
-        self.gamma = 0.95
-        self.terminal_state = AgentActionType.CLOSE
+        self.alpha = Q_LEARNING_RATE
+        self.gamma = GAMMA
         self.q = {}
 
         self._initialize_q_values()
@@ -78,14 +76,15 @@ class QLearningSolver(MDPSolver):
             # State of the  user is characterized by the type of action taken
             # taken by the agent -- an AgentActionType.
             curr_state = agent_first_action.type
-
-            while curr_state is not self.terminal_state:
+            action = None
+            while not (curr_state is AgentActionType.CLOSE and
+                       action is UserActionType.CLOSE):
                 action, next_state = session.execute_one_step()
                 reward = self.reward.get_reward(curr_state, action)
                 self._update_q_value(curr_state, action, next_state, reward)
                 curr_state = next_state
 
-            self.alpha *= DECAY_RATE
+            self.alpha *= Q_DECAY_RATE
 
     def _initialize_q_values(self):
         """Initializes Q-values.
@@ -98,7 +97,7 @@ class QLearningSolver(MDPSolver):
         for state in self.q:
             self.q[state] = 0.5 * np.ones(num_actions)
 
-        self.q[self.terminal_state] = np.zeros(num_actions)
+        # self.q[self.terminal_state] = np.zeros(num_actions)
 
     def _update_q_value(self, state, action, next_state, reward):
         """Performs a TD(0) update to the Q-value function.
