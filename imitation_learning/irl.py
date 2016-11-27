@@ -1,11 +1,11 @@
 import numpy as np
-from copy import deepcopy
 
 from agent.agent import Agent
 from dialog_session import DialogSession
 from mdp.solver import QLearningSolver
 from user.user import User
 from user.user_features import UserFeatures
+from user_simulation_irl import UserSimulationIRL
 from utils.params import UserPolicyType, GAMMA, NUM_SESSIONS_FE, THRESHOLD
 
 
@@ -18,7 +18,8 @@ class IRL(object):
         features (UserFeatures): Feature function for dialog users.
         real_user (:obj: User): An expert user with a hand-crafted dialog
             policy.
-        simulated_users (list): Description
+        simulated_users (list of :obj: UserSimulationIRL): List of user
+            simulations built during the IRL algorithm.
         user (User): The dialog user class.
     """
 
@@ -44,9 +45,6 @@ class IRL(object):
         # Start with a user simulation with random policy.
         random_user = self.user(UserPolicyType.random)
 
-        # Save the simulated user.
-        self.simulated_users.append(random_user)
-
         # Calculate feature expectation for the random user policy.
         mu_curr = self._calc_feature_expectation(random_user, self.agent())
 
@@ -71,13 +69,12 @@ class IRL(object):
         print sim_user.policy.policy
         print "--------------------------------"
 
-        # Save the leanred simulated user.
-        self.simulated_users.append(sim_user)
-
         # Calculate feature expectation of the new policy.
         mu_curr = self._calc_feature_expectation(sim_user, self.agent())
 
-        # mu_bar_prev = deepcopy(mu_bar_curr)
+        # Save the simulated user.
+        self._save_simulated_user(random_user, w, mu_e - mu_curr)
+
         mu_bar_prev = mu_bar_curr
 
         while t >= THRESHOLD:
@@ -107,13 +104,12 @@ class IRL(object):
             print sim_user.policy.policy
             print "--------------------------------"
 
-            # Save the leanred simulated user.
-            self.simulated_users.append(sim_user)
-
             # Calculate feature expectation of the new policy.
             mu_curr = self._calc_feature_expectation(sim_user, self.agent())
 
-            # mu_bar_prev = deepcopy(mu_bar_curr)
+            # Save the simulated user.
+            self._save_simulated_user(random_user, w, mu_e - mu_curr)
+
             mu_bar_prev = mu_bar_curr
 
     def _calc_feature_expectation(self, user, agent,
@@ -144,3 +140,17 @@ class IRL(object):
 
         feature_expectation /= num_sessions
         return feature_expectation
+
+    def _save_simulated_user(self, user, weights, distance_to_expert):
+        """Saves the simulated user built during an iteration of IRL algorithm.
+
+        Args:
+            user (:obj: User): The learnt user simulation.
+            weights (1D numpy.ndarray): The weight vectors characterizing the
+                `Reward` function that gave rise to this user-simulation.
+            distance_to_expert (float): Difference between the feature
+                expectations of the expert user and the simulated user.
+        """
+        simulated_user = UserSimulationIRL(user.policy, weights,
+                                           distance_to_expert)
+        self.simulated_users.append(simulated_user)
