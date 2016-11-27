@@ -75,7 +75,8 @@ class IRL(object):
         mu_curr = self._calc_feature_expectation(sim_user, self.agent())
 
         # Save the simulated user.
-        self._save_simulated_user(sim_user, w, mu_e, mu_curr)
+        self._save_simulated_user(sim_user, w, q_learning.q,
+                                  mu_e, mu_curr)
 
         mu_bar_prev = mu_bar_curr
 
@@ -85,7 +86,6 @@ class IRL(object):
             # Dump the list of user simulations every 10 step.
             if steps % 10 == 0:
                 self._dump_simulations()
-            raw_input()
 
             numerator = np.dot((mu_curr - mu_bar_prev), (mu_e - mu_bar_prev))
             denominator = np.dot((mu_curr - mu_bar_prev),
@@ -117,7 +117,8 @@ class IRL(object):
             mu_curr = self._calc_feature_expectation(sim_user, self.agent())
 
             # Save the simulated user.
-            self._save_simulated_user(random_user, w, mu_e, mu_curr)
+            self._save_simulated_user(random_user, w, q_learning.q,
+                                      mu_e, mu_curr)
 
             mu_bar_prev = mu_bar_curr
             steps += 1
@@ -155,19 +156,20 @@ class IRL(object):
         feature_expectation /= num_sessions
         return feature_expectation
 
-    def _save_simulated_user(self, user, weights, expert_fe, simulated_fe):
+    def _save_simulated_user(self, user, weights, q, expert_fe, simulated_fe):
         """Saves the simulated user built during an iteration of IRL algorithm.
 
         Args:
             user (:obj: User): The learnt user simulation.
             weights (1D numpy.ndarray): The weight vectors characterizing the
                 `Reward` function that gave rise to this user-simulation.
+            q (dict): Q-value function of the user policy.
             expert_fe (1d numpy.ndarray): Expert user's feature expectations.
             simulated_fe (1d numpy.ndarray): Simulated user's feature
                 expectations.
         """
         distance_to_expert = np.linalg.norm(expert_fe - simulated_fe)
-        simulated_user = UserSimulationIRL(user.policy, weights,
+        simulated_user = UserSimulationIRL(user.policy, q, weights,
                                            distance_to_expert)
         self.simulated_users.append(simulated_user)
 

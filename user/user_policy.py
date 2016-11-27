@@ -2,7 +2,6 @@
 
 import numpy as np
 
-from user_features import UserFeatures
 from utils.params import AgentActionType, UserActionType, UserPolicyType
 from utils import utils
 
