@@ -11,34 +11,34 @@ class UserState(object):
         slots (dict): Dictionary of slot-status pairs. The dictionary is keyed
             by slot identifiers, and the values correspond to the
             status (`UserStateStatus`) of each slot.
-        system_act (AgentAction): Most recent action taken by the agent.
+        agent_act (AgentAction): Most recent action taken by the agent.
     """
 
     def __init__(self):
         self.slots = {}
-        self.system_act = None
+        self.agent_act = None
 
         self._init_slots()
 
     def __str__(self):
         return "Slots: {}, System-Act: {}".format(self.slots,
-                                                  self.system_act.type.value)
+                                                  self.agent_act.type.value)
 
     def __hash__(self):
-        # Only `system_act` attribute is used for hashing since it's the only
+        # Only `agent_act` attribute is used for hashing since it's the only
         # consequential part of the `UserState`.
 
-        return hash(self.system_act)
+        return hash(self.agent_act)
 
     def __eq__(self, other):
-        # Only the `system_act` attribute is used to test equality.
+        # Only the `agent_act` attribute is used to test equality.
         if type(other) is UserState:
-            return self.system_act is other.system_act
+            return self.agent_act is other.agent_act
         else:
             return False
 
     def __ne__(self, other):
-        # Only the `system_act` attribute is used to test inequality.
+        # Only the `agent_act` attribute is used to test inequality.
         return not (self == other)
 
     def mark_slot_as_empty(self, slot_id):

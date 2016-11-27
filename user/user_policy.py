@@ -12,7 +12,7 @@ class UserPolicy(object):
     A policy is defined as a mapping from user-state to the type of action
     that the user should perform in that state. While `UserState` -- which
     encodes the user's state -- consists of other attributes, only the
-    `UserState.system_act` -- an `AgentActionType` enum -- is consequential
+    `UserState.agent_act` -- an `AgentActionType` enum -- is consequential
     to the user's policy. Hence, policy is a mapping from `AgentActionType` to
     `UserActionType`.
 
@@ -22,7 +22,7 @@ class UserPolicy(object):
         actions (dict): List of possible action types, i.e., UserActionType
             enum members.
         policy (dict): The defined policy. It is a dictionary indexed by state.
-            Since `UserState.system_act` -- an `AgentActionType` enum -- is the
+            Since `UserState.agent_act` -- an `AgentActionType` enum -- is the
             only consequential part of user's state, the dictionary is indexed
             by it. The value of each entry is a list of probability values.
             Each entry in the list is the probability, in that state, of
@@ -53,7 +53,7 @@ class UserPolicy(object):
         Returns:
             UserActionType: Type of the action to be taken.
         """
-        state = user_state.system_act.type
+        state = user_state.agent_act.type
         probabilities = self.policy[state]
         sampled_action = np.random.choice(self.actions, 1, p=probabilities)[0]
         return sampled_action   # a UserActionType

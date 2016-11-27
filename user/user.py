@@ -30,34 +30,34 @@ class User(object):
         self.policy = UserPolicy(policy_type)
         self.features = UserFeatures()
 
-    def take_turn(self, system_act):
+    def take_turn(self, agent_act):
         """Executes a user turn based on the agent's most recent action.
 
         Args:
-            system_act (AgentAction): Dialog agent's most recent action.
+            agent_act (AgentAction): Dialog agent's most recent action.
 
         Returns:
             UserAction: User's next action.
         """
-        next_action = self.update_state_and_get_next_action(system_act)
+        next_action = self.update_state_and_get_next_action(agent_act)
         # print("User -- [State] " + str(self.state))
         # print("User -- (Action) " + str(next_action))
         # print("U:" + next_action.type.value)
         return next_action
 
-    def update_state_and_get_next_action(self, system_act):
+    def update_state_and_get_next_action(self, agent_act):
         """Updates the user-state and returns the next action to be taken.
         The state-update and next action are based on the user-`policy` and
         the agent's most recent action
 
         Args:
-            system_act (AgentAction): Dialog agent's most recent action.
+            agent_act (AgentAction): Dialog agent's most recent action.
 
         Returns:
             UserAction: User's next action.
         """
-        # Partially update state by updating the `system_act`.
-        self.state.system_act = system_act
+        # Partially update state by updating the `agent_act`.
+        self.state.agent_act = agent_act
 
         # From the policy, sample the type of action, a UserActionType, to be
         # taken.
@@ -81,8 +81,8 @@ class User(object):
         Returns:
             UserAction: The action to be taken.
         """
-        requested_slot_id = self.state.system_act.ask_id
-        confirm_slot_id = self.state.system_act.confirm_id
+        requested_slot_id = self.state.agent_act.ask_id
+        confirm_slot_id = self.state.agent_act.confirm_id
         random_slot_id = randint(NUM_SLOTS)
 
         if action_type is UserActionType.SILENT:
@@ -144,8 +144,8 @@ class User(object):
             # responds with information for the requested slot, then in
             # addition to marking the requested slot as provided, mark the slot
             # being implicitly confirmed as "CONFIRMED".
-            if self.state.system_act.type is AgentActionType.CONFIRM_ASK:
-                confirm_slot_id = self.state.system_act.confirm_id
+            if self.state.agent_act.type is AgentActionType.CONFIRM_ASK:
+                confirm_slot_id = self.state.agent_act.confirm_id
                 self.state.slots[confirm_slot_id] = UserStateStatus.CONFIRMED
 
         elif action.type is UserActionType.CONFIRM:
