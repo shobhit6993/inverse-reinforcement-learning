@@ -296,9 +296,16 @@ class Agent(object):
             .format(user_act, self._handle_close.__name__))
 
         # If the user wants to terminate the session, the agent always
-        # obliges.
+        # obliges only if it has all the information. Otherwise, it repeats
+        # it's last action.
 
-        return AgentActions.close.value
+        # If the agent has all the information, then `_ask_confirm_or_close`
+        # method will return a "CLOSE" action.
+        action = self._ask_confirm_or_close()
+        if action.type is AgentActionType.CLOSE:
+            return action
+        else:
+            return self.prev_agent_act
 
     def _mark_all_slots_as_obtained(self):
         """Marks all slots "OBTAINED"
