@@ -1,4 +1,4 @@
-class UserSimulationIRL(object):
+class UserSimulation(object):
     """User simulation learnt using IRL.
 
     Attributes:
@@ -11,7 +11,7 @@ class UserSimulationIRL(object):
     """
 
     def __init__(self, policy, q, weights, distance):
-        """Constructor for UserSimulationIRL class
+        """Constructor for UserSimulation class
 
         Args:
             policy (:obj: UserPolicy): Policy defining the user simulation

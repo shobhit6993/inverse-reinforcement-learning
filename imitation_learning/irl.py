@@ -6,7 +6,7 @@ from dialog_session import DialogSession
 from mdp.solver import QLearningSolver
 from user.user import User
 from user.user_features import UserFeatures
-from user_simulation_irl import UserSimulationIRL
+from user_simulation import UserSimulation
 from utils.params import UserPolicyType, GAMMA, NUM_SESSIONS_FE, THRESHOLD
 from utils.params import SIMULATIONS_DUMP_FILE
 
@@ -20,7 +20,7 @@ class IRL(object):
         features (UserFeatures): Feature function for dialog users.
         real_user (:obj: User): An expert user with a hand-crafted dialog
             policy.
-        simulated_users (list of :obj: UserSimulationIRL): List of user
+        simulated_users (list of :obj: UserSimulation): List of user
             simulations built during the IRL algorithm.
         user (User): The dialog user class.
     """
@@ -169,7 +169,7 @@ class IRL(object):
                 expectations.
         """
         distance_to_expert = np.linalg.norm(expert_fe - simulated_fe)
-        simulated_user = UserSimulationIRL(user.policy, q, weights,
+        simulated_user = UserSimulation(user.policy, q, weights,
                                            distance_to_expert)
         self.simulated_users.append(simulated_user)
 
