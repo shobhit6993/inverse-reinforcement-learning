@@ -20,14 +20,21 @@ class User(object):
         state (UserState): User's current state.
     """
 
-    def __init__(self, policy_type=None):
+    def __init__(self, policy=None, policy_type=None):
         """Class constructor
 
         Args:
             policy_type (UserPolicyType or None): Type of user policy.
         """
         self.state = UserState()
-        self.policy = UserPolicy(policy_type)
+
+        self.policy = None
+
+        if policy is None:
+            self.policy = UserPolicy(policy_type)
+        else:
+            self.policy = policy
+
         self.features = UserFeatures()
 
     def take_turn(self, agent_act):
@@ -70,10 +77,17 @@ class User(object):
         self._update_state(action)
         return action
 
-    def reset(self):
-        """Resets the user."""
+    def reset(self, reset_policy=True):
+        """Resets the user.
+
+        Args:
+            reset_policy (bool, optional): Set to True if the policy should
+                also be reset. Otherwise, the policy is retained and only the
+                state is reset. Default value is True.
+        """
         self.state.reset()
-        self.policy.reset()
+        if reset_policy:
+            self.policy.reset()
 
     def _build_action(self, action_type):
         """Builds a full action based on the sampled action type.

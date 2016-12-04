@@ -4,9 +4,9 @@ import numpy as np
 from agent.agent import Agent
 from dialog_session import DialogSession
 from mdp.solver import QLearningSolver
+from simulation.user_simulation import UserSimulation
 from user.user import User
 from user.user_features import UserFeatures
-from user_simulation import UserSimulation
 from utils.params import UserPolicyType, GAMMA, NUM_SESSIONS_FE, THRESHOLD
 from utils.params import SIMULATIONS_DUMP_FILE
 
@@ -28,7 +28,7 @@ class IRL(object):
     def __init__(self):
         self.user = User
         self.agent = Agent
-        self.real_user = self.user(UserPolicyType.handcrafted)
+        self.real_user = self.user(policy_type=UserPolicyType.handcrafted)
         self.simulated_users = []
         self.features = UserFeatures()
 
@@ -45,7 +45,7 @@ class IRL(object):
         mu_e = self._calc_feature_expectation(self.real_user, self.agent())
 
         # Start with a user simulation with random policy.
-        random_user = self.user(UserPolicyType.random)
+        random_user = self.user(policy_type=UserPolicyType.random)
 
         # Calculate feature expectation for the random user policy.
         mu_curr = self._calc_feature_expectation(random_user, self.agent())
@@ -77,6 +77,8 @@ class IRL(object):
         # Save the simulated user.
         self._save_simulated_user(sim_user, w, q_learning.q,
                                   mu_e, mu_curr)
+        # self._save_simulated_user(sim_user, w, None,
+        #                           mu_e, mu_curr)
 
         mu_bar_prev = mu_bar_curr
 
@@ -117,8 +119,10 @@ class IRL(object):
             mu_curr = self._calc_feature_expectation(sim_user, self.agent())
 
             # Save the simulated user.
-            self._save_simulated_user(random_user, w, q_learning.q,
+            self._save_simulated_user(sim_user, w, q_learning.q,
                                       mu_e, mu_curr)
+            # self._save_simulated_user(sim_user, w, None,
+            #                           mu_e, mu_curr)
 
             mu_bar_prev = mu_bar_curr
             steps += 1
@@ -170,7 +174,7 @@ class IRL(object):
         """
         distance_to_expert = np.linalg.norm(expert_fe - simulated_fe)
         simulated_user = UserSimulation(user.policy, q, weights,
-                                           distance_to_expert)
+                                        distance_to_expert)
         self.simulated_users.append(simulated_user)
 
     def _dump_simulations(self):

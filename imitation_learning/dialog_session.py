@@ -54,7 +54,7 @@ class DialogSession:
             AgentActionType: The type of action performed by the agent.
         """
         self.prev_agent_act = self.agent.start_dialog()
-        return self.prev_agent_act
+        return self.prev_agent_act.type
 
     def execute_one_step(self):
         """Executes one step of dialog by making the user act, followed
@@ -93,7 +93,7 @@ def generate_dialog_corpus(num_sessions):
     Args:
         num_sessions (int, optional): Number of dialog sessions to be executed.
     """
-    user = User(UserPolicyType.handcrafted)
+    user = User(policy_type=UserPolicyType.handcrafted)
     agent = Agent()
     for _ in xrange(num_sessions):
         session = DialogSession(user, agent)
@@ -105,7 +105,7 @@ def generate_dialog_corpus(num_sessions):
 def run_single_session():
     """Executes a single dialog session.
     """
-    user = User(UserPolicyType.handcrafted)
+    user = User(policy_type=UserPolicyType.handcrafted)
     agent = Agent()
     session = DialogSession(user, agent)
     session.start()

@@ -9,7 +9,7 @@ from utils.params import UserPolicyType
 def run_single_session():
     """Executes a single dialog session.
     """
-    user = User(UserPolicyType.handcrafted)
+    user = User(policy_type=UserPolicyType.handcrafted)
     agent = Agent()
     session = DialogSession(user, agent)
     session.start()

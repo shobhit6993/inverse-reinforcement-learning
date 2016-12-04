@@ -29,5 +29,4 @@ class Reward(object):
             TYPE: Description
         """
         feature_vector = self.features.get_vector(state, action)
-
         return np.dot(self.weights, feature_vector)
