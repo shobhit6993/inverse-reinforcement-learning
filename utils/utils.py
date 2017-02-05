@@ -31,7 +31,9 @@ def normalize_probabilities(probabilities):
     while sum_of_probabilities != 1.0:
         diff = 1.0 - sum_of_probabilities
         random_index = np.random.randint(len(probabilities))
-        probabilities[random_index] += diff
+        new_value = probabilities[random_index] + diff
+        if new_value >= 0 and new_value <= 1:
+            probabilities[random_index] += diff
         sum_of_probabilities = np.sum(probabilities)
 
 

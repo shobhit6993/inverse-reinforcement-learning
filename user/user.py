@@ -35,7 +35,7 @@ class User(object):
         else:
             self.policy = policy
 
-        self.features = UserFeatures()
+        self.features = UserFeatures
 
     def take_turn(self, agent_act):
         """Executes a user turn based on the agent's most recent action.

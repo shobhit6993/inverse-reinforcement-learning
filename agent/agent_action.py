@@ -65,7 +65,7 @@ class AgentActions(Enum):
                     for ask_id in xrange(NUM_SLOTS)]
                    for conf_id in xrange(NUM_SLOTS)]
     close = AgentAction(AgentActionType.CLOSE, None, None)
-
+    bad_close = AgentAction(AgentActionType.BAD_CLOSE, None, None)
     # Delete the loop variables to prevent them from being treated as
     # enum members. Sigh.
     del i, ask_id, conf_id

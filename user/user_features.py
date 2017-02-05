@@ -3,14 +3,18 @@ import numpy as np
 from utils.params import AgentActionType, UserActionType
 
 
+def deco(cls):
+    cls._define_function()
+    return cls
+
+
+@deco
 class UserFeatures(object):
-    def __init__(self):
-        self._function = {}
-        self.dimensions = 0
+    dimensions = 0
+    _function = {}
 
-        self._define_function()
-
-    def get_vector(self, state, action):
+    @classmethod
+    def get_vector(cls, state, action):
         """Returns the feature vector for a state-action pair.
 
         Args:
@@ -21,28 +25,29 @@ class UserFeatures(object):
             numpy.array: Feature vector for the given state-action pair.
         """
         try:
-            return self._function[(state, action)]
+            return cls._function[(state, action)]
         except KeyError as e:
             print("Exception: {}. Invalid state: '{}' and action: '{}' pair"
                   .format(e, state, action))
             raise
 
-    def _define_function(self):
+    @classmethod
+    def _define_function(cls):
         """Builds the feature function.
         """
         # First calculate the size of input space.
-        self.dimensions = 0
+        cls.dimensions = 0
         # User-state is effectively characterized by AgentActionType
         for state in AgentActionType:
             for action in UserActionType:
-                self.dimensions += 1
+                cls.dimensions += 1
 
         # Now construct the feature function -- mapping from state-action pairs
         # to an n dim vector whose elements are in the range [0, 1]
         i = 0
         for state in AgentActionType:
             for action in UserActionType:
-                vec = np.zeros(self.dimensions)
+                vec = np.zeros(cls.dimensions)
                 vec[i] = 1.
-                self._function[(state, action)] = vec
+                cls._function[(state, action)] = vec
                 i += 1

@@ -187,10 +187,13 @@ class Agent(object):
         if self.prev_agent_act.type is AgentActionType.GREET:
             self._mark_all_slots_as_obtained()
             return self._ask_confirm_or_close()
+        elif self.prev_agent_act.type is AgentActionType.ASK_SLOT:
+            self._mark_all_slots_as_obtained()
+            return self._ask_confirm_or_close()
         elif self.prev_agent_act.type is AgentActionType.CLOSE:
             return AgentActions.close.value
         elif (self.prev_agent_act.type is AgentActionType.EXPLICIT_CONFIRM or
-              self.prev_agent_act.type is AgentActionType.ASK_SLOT or
+              # self.prev_agent_act.type is AgentActionType.ASK_SLOT or
               self.prev_agent_act.type is AgentActionType.CONFIRM_ASK):
             return self.prev_agent_act
         else:

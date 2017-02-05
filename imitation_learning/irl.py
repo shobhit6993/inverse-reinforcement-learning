@@ -3,12 +3,15 @@ import numpy as np
 
 from agent.agent import Agent
 from dialog_session import DialogSession
-from mdp.solver import QLearningSolver
+from mdp.solver import SarsaSolver
 from simulation.user_simulation import UserSimulation
 from user.user import User
 from user.user_features import UserFeatures
 from utils.params import UserPolicyType, GAMMA, NUM_SESSIONS_FE, THRESHOLD
 from utils.params import SIMULATIONS_DUMP_FILE
+
+from utils.params import AgentActionType, UserActionType
+from mdp.reward import Reward
 
 
 class IRL(object):
@@ -30,7 +33,7 @@ class IRL(object):
         self.agent = Agent
         self.real_user = self.user(policy_type=UserPolicyType.handcrafted)
         self.simulated_users = []
-        self.features = UserFeatures()
+        # self.features = UserFeatures()
 
     def run_irl(self):
         """Executes Inverse Reinforcement Learning algorithm to learn a set of
@@ -42,27 +45,30 @@ class IRL(object):
         # "Apprenticeship Learning via Inverse Reinforcement Learning."
 
         # Calculate feature expectation for the expert user policy.
-        mu_e = self._calc_feature_expectation(self.real_user, self.agent())
+        mu_e = self.calc_feature_expectation(self.real_user, self.agent())
 
         # Start with a user simulation with random policy.
         random_user = self.user(policy_type=UserPolicyType.random)
 
         # Calculate feature expectation for the random user policy.
-        mu_curr = self._calc_feature_expectation(random_user, self.agent())
-
+        mu_curr = self.calc_feature_expectation(random_user, self.agent())
+        # print mu_e
+        # print mu_curr
+        # raw_input()
         mu_bar_curr = mu_curr
         w = mu_e - mu_bar_curr  # The weight vector.
         t = np.linalg.norm(mu_e - mu_bar_curr)  # Margin of separation.
 
         print w
         print t
+        self._print_reward(w)
 
         # The learned weights w define a reward function. This reward function
         # is somewhat close to the expert's reward function. Learn an optimal
         # policy for that reward function, resulting in a decent simulated
         # user.
         sim_user = self.user()
-        q_learning = QLearningSolver(sim_user, self.agent(), w)
+        q_learning = SarsaSolver(sim_user, self.agent(), w)
         q_learning.solve()
 
         print "\nQ-values"
@@ -72,7 +78,7 @@ class IRL(object):
         print "--------------------------------"
 
         # Calculate feature expectation of the new policy.
-        mu_curr = self._calc_feature_expectation(sim_user, self.agent())
+        mu_curr = self.calc_feature_expectation(sim_user, self.agent())
 
         # Save the simulated user.
         self._save_simulated_user(sim_user, w, q_learning.q,
@@ -100,13 +106,14 @@ class IRL(object):
 
             print w
             print t
+            self._print_reward(w)
 
             # The learned weights w define a reward function. This reward
             # function is somewhat close to the expert's reward function.
             # Learn an optimal policy for that reward function, resulting
             # in a decent simulated user.
             sim_user = self.user()
-            q_learning = QLearningSolver(sim_user, self.agent(), w)
+            q_learning = SarsaSolver(sim_user, self.agent(), w)
             q_learning.solve()
 
             print "\nQ-values"
@@ -116,8 +123,9 @@ class IRL(object):
             print "--------------------------------"
 
             # Calculate feature expectation of the new policy.
-            mu_curr = self._calc_feature_expectation(sim_user, self.agent())
-
+            mu_curr = self.calc_feature_expectation(sim_user, self.agent())
+            # print mu_curr
+            # raw_input()
             # Save the simulated user.
             self._save_simulated_user(sim_user, w, q_learning.q,
                                       mu_e, mu_curr)
@@ -131,8 +139,9 @@ class IRL(object):
         if steps % 10 == 0:
             self._dump_simulations()
 
-    def _calc_feature_expectation(self, user, agent,
-                                  num_sessions=NUM_SESSIONS_FE):
+    @classmethod
+    def calc_feature_expectation(cls, user, agent,
+                                 num_sessions=NUM_SESSIONS_FE):
         """Calculates the feature expectation of a user policy against the
         handcoded agent by executing a series of dialog sessions and tracking
         the state-action pairs associated with the user.
@@ -148,13 +157,15 @@ class IRL(object):
         Returns:
             numpy.array: Feature expectation of the user's policy.
         """
-        feature_expectation = np.zeros(self.features.dimensions)
+        feature_expectation = np.zeros(user.features.dimensions)
         for _ in xrange(num_sessions):
+            user.reset(reset_policy=False)
+            agent.reset()
             session = DialogSession(user, agent)
             session.start()
 
             for t, (state, action) in enumerate(session.user_log):
-                feature_vector = self.features.get_vector(state, action)
+                feature_vector = user.features.get_vector(state, action)
                 feature_expectation += ((GAMMA**t) * feature_vector)
 
         feature_expectation /= num_sessions
@@ -183,3 +194,14 @@ class IRL(object):
         """
         with open(SIMULATIONS_DUMP_FILE, "w") as fout:
             pickle.dump(self.simulated_users, fout)
+
+    def _print_reward(self, w):
+        actions = [user_action for user_action in UserActionType]
+        # action_index_map = {action: i for i, action in
+        #                     enumerate(actions)}
+        states = [state for state in AgentActionType]
+        reward = Reward(UserFeatures, w)
+        print "REWARD:"
+        for state in states:
+            for action in actions:
+                print "{}, {}, {:.3f}".format(state, action, reward.get_reward(state, action))

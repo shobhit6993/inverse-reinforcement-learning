@@ -1,6 +1,7 @@
 """Dialog session."""
 
 from agent.agent import Agent
+from agent.agent_action import AgentAction, AgentActions
 from user.user import User
 from user.user_action import UserAction
 from utils.params import AgentActionType
@@ -22,6 +23,7 @@ class DialogSession:
     def __init__(self, user, agent):
         self.user = user
         self.agent = agent
+        self.num_steps = 0
         self.user_log = []
         self.prev_agent_act = None
 
@@ -34,18 +36,24 @@ class DialogSession:
         user_act = UserAction(None, None)
         while not (user_act.type is UserActionType.CLOSE and
                    agent_act.type is AgentActionType.CLOSE):
+            if self.num_steps == 100:
+                agent_act = AgentActions.bad_close.value
             user_act = self.user.take_turn(agent_act)
             self._save_user_state_action(user_act)
+            # raw_input()
 
-            if agent_act.type is AgentActionType.CLOSE:
+            if (agent_act.type is AgentActionType.CLOSE or
+                    agent_act.type is AgentActionType.BAD_CLOSE):
                 break
 
             agent_act = self.agent.take_turn(user_act)
+            self.num_steps += 1
 
     def clear_user_log(self):
-        """Purges the user log.
+        """Purges the user log and resets the number of steps.
         """
         self.user_log[:] = []
+        self.num_steps = 0
 
     def ask_agent_to_start(self):
         """Makes the dialog agent start the dialog.
@@ -65,7 +73,11 @@ class DialogSession:
                 user, and it's response from the agent.
         """
         user_act = self.user.take_turn(self.prev_agent_act)
-        self.prev_agent_act = self.agent.take_turn(user_act)
+        if self.num_steps >= 100:
+            self.prev_agent_act = AgentActions.bad_close.value
+        else:
+            self.prev_agent_act = self.agent.take_turn(user_act)
+
         return user_act.type, self.prev_agent_act.type
 
     def _save_user_state_action(self, user_action):

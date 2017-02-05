@@ -2,6 +2,7 @@
 
 import numpy as np
 
+from user_state import UserState
 from utils.params import AgentActionType, UserActionType, UserPolicyType
 from utils import utils
 
@@ -58,7 +59,11 @@ class UserPolicy(object):
         Returns:
             UserActionType: Type of the action to be taken.
         """
-        state = user_state.agent_act.type
+        if type(user_state) is UserState:
+            state = user_state.agent_act.type
+        elif type(user_state) is AgentActionType:
+            state = user_state
+
         probabilities = self.policy[state]
         sampled_action = np.random.choice(self.actions, 1, p=probabilities)[0]
         return sampled_action   # a UserActionType
@@ -80,7 +85,14 @@ class UserPolicy(object):
 
         for state in self.policy:
             q_values = q_function[state]
+            # probabilities = self.softmax(q_values)
             n = len(q_values)
+
+            if state is AgentActionType.BAD_CLOSE:
+                self.policy[state] = np.zeros(n)
+                close_index = self.action_index_map[UserActionType.CLOSE]
+                self.policy[state][close_index] = 1
+                continue
 
             probabilities = self.policy[state]
             # Assign epsion probability mass to each action.
@@ -101,8 +113,36 @@ class UserPolicy(object):
                 random_index = np.random.randint(n)
                 probabilities[random_index] += diff
                 sum_of_probabilities = np.sum(probabilities)
-
+            utils.normalize_probabilities(probabilities)
+            self.policy[state] = probabilities
         self._check_policy_correctness()
+
+    def softmax(self, w):
+        e = np.exp(w)
+        dist = e / np.sum(e)
+        return dist
+
+    def remove_epsilon_exploration(self, epsilon):
+        for state in self.policy:
+            probabilities = self.policy[state]
+            count = 0
+            mass = 0.
+            for i in xrange(0, len(probabilities)):
+                diff = abs(probabilities[i] - epsilon)
+                if diff <= 0.01:
+                    mass += probabilities[i]
+                    probabilities[i] = 0
+                else:
+                    count += 1
+
+            for i in xrange(0, len(probabilities)):
+                if probabilities[i] == 0:
+                    probabilities[i] = 0.
+                else:
+                    probabilities[i] += mass / count
+
+            utils.normalize_probabilities(probabilities)
+            self.policy[state] = probabilities
 
     def reset(self):
         """Resets the policy to an invalid, all-zero-probabilities policy."""
@@ -131,18 +171,20 @@ class UserPolicy(object):
         negate = self.action_index_map[UserActionType.NEGATE]
         close = self.action_index_map[UserActionType.CLOSE]
 
-        self.policy[AgentActionType.GREET][silent] = 0.7
-        self.policy[AgentActionType.GREET][all_slots] = 0.3
+        self.policy[AgentActionType.GREET][silent] = 0.5
+        self.policy[AgentActionType.GREET][all_slots] = 0.5
 
-        self.policy[AgentActionType.ASK_SLOT][one_slot] = 0.95
-        self.policy[AgentActionType.ASK_SLOT][all_slots] = 0.05
+        self.policy[AgentActionType.ASK_SLOT][one_slot] = 0.8
+        self.policy[AgentActionType.ASK_SLOT][all_slots] = 0.2
 
         self.policy[AgentActionType.EXPLICIT_CONFIRM][confirm] = 1.0
 
-        self.policy[AgentActionType.CONFIRM_ASK][one_slot] = 0.9
-        self.policy[AgentActionType.CONFIRM_ASK][negate] = 0.1
+        self.policy[AgentActionType.CONFIRM_ASK][one_slot] = 0.5
+        self.policy[AgentActionType.CONFIRM_ASK][negate] = 0.5
 
         self.policy[AgentActionType.CLOSE][close] = 1.0
+
+        self.policy[AgentActionType.BAD_CLOSE][close] = 1.0
 
         self._check_policy_correctness()
 
@@ -153,6 +195,11 @@ class UserPolicy(object):
         for state in self.policy:
             probabilities = np.random.dirichlet(alpha).tolist()
             self.policy[state] = probabilities
+
+        state = AgentActionType.BAD_CLOSE
+        self.policy[state] = np.zeros(len(self.actions))
+        close_index = self.action_index_map[UserActionType.CLOSE]
+        self.policy[state][close_index] = 1
 
     def _check_policy_correctness(self):
         """Validates the defined policy by checking for valid probablity
